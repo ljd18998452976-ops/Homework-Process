@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任务进程生成器 - 自动保存与JSON版</title>
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+    <script src="https://cdn.bootcdn.net/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/flatpickr/4.6.13/l10n/zh.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #003366; --accent-color: #007bff; --success-color: #28a745;
+            --warning-color: #f39c12; --danger-color: #dc3545; --bg-body: #f4f7f9;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; }
+        body { background-color: var(--bg-body); padding: 20px; color: #333; }
+        .container { display: flex; width: 100%; max-width: 1400px; margin: 0 auto; gap: 30px; }
+
+        /* 左侧编辑器 */
+        .edit-area { flex: 1.2; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        .top-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .input-item { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; outline: none; transition: 0.3s; }
+        .input-item:focus { border-color: var(--accent-color); box-shadow: 0 0 5px rgba(0,123,255,0.2); }
+
+        /* 数据管理面板 (JSON 导入导出) */
+        .data-panel { background: #f8f9fa; border: 1px solid #e9ecef; padding: 12px 15px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+        .data-panel-title { font-size: 13px; font-weight: bold; color: #495057; display: flex; align-items: center; gap: 6px; }
+        .data-btns { display: flex; gap: 8px; }
+        .btn-data { padding: 6px 12px; border-radius: 4px; border: 1px solid transparent; cursor: pointer; font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 5px; transition: 0.2s; }
+        .btn-export-json { background: #fff; border-color: var(--primary-color); color: var(--primary-color); }
+        .btn-import-json { background: var(--primary-color); color: #fff; }
+        .btn-export-json:hover { background: #f0f4f8; }
+        .btn-import-json:hover { background: #002244; }
+
+        /* 任务卡片 */
+        .task-card { background: #fcfcfc; border: 1px solid #e0e0e0; border-radius: 10px; padding: 15px; margin-bottom: 15px; }
+        .day-group { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-weight: bold; color: var(--primary-color); }
+        .day-group input { width: 60px; text-align: center; border: 1px solid #ccc; border-radius: 4px; padding: 4px; outline: none; }
+        .day-group input:focus { border-color: var(--accent-color); }
+        
+        .type-row { background: #fff; padding: 10px; border-radius: 6px; border: 1px solid #eee; margin-bottom: 8px; }
+        .type-row label { font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .type-row textarea { width: 100%; height: 50px; margin-top: 5px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; resize: vertical; font-size: 13px; outline: none; }
+        .type-row textarea:focus { border-color: var(--accent-color); }
+
+        .btn-add { width: 100%; padding: 12px; border: 2px dashed var(--accent-color); color: var(--accent-color); background: #fff; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 20px; transition: 0.2s; }
+        .btn-add:hover { background: #f0f7ff; }
+        .btn-del { color: var(--danger-color); border: none; background: none; cursor: pointer; font-size: 12px; margin-top: 8px; }
+
+        .final-actions { display: flex; gap: 15px; margin-top: 20px; }
+        .btn-main { flex: 1; padding: 15px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; font-size: 16px; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-export-img { background: var(--success-color); transition: 0.2s; }
+        .btn-export-img:hover { background: #218838; }
+        
+        #autoSaveTip { font-size: 12px; color: var(--success-color); text-align: center; margin-top: 10px; opacity: 0; transition: opacity 0.3s; }
+
+        /* 右侧预览区 */
+        .preview-area { flex: 1; }
+        .guide-paper { background: #fff; padding: 40px; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; }
+        .p-header { text-align: center; border-bottom: 2px solid var(--primary-color); padding-bottom: 15px; margin-bottom: 25px; }
+        .p-tags { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
+        .p-tag { background: #f0f4f8; padding: 4px 12px; border-radius: 20px; font-size: 13px; color: var(--primary-color); font-weight: bold; }
+        
+        .p-item { border-left: 4px solid var(--accent-color); padding-left: 15px; margin-bottom: 25px; }
+        .p-day-label { background: var(--accent-color); color: #fff; padding: 2px 12px; border-radius: 4px; font-size: 14px; font-weight: bold; display: inline-block; margin-bottom: 10px; }
+        .p-row { margin-bottom: 8px; }
+        .p-row b { font-size: 14px; display: flex; align-items: center; gap: 6px; }
+        .p-row p { font-size: 14px; padding-left: 24px; color: #444; white-space: pre-wrap; margin-top: 4px; }
+
+        .p-tip-box { background: #fff9db; border: 1px solid #ffe58f; padding: 15px; border-radius: 6px; font-size: 14px; margin-top: 30px; }
+        .p-footer { background: var(--primary-color); color: #fff; text-align: center; padding: 20px; margin-top: 40px; font-size: 12px; border-radius: 4px; line-height: 1.6; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="edit-area">
+        <h2 style="color: var(--primary-color); margin-bottom: 20px;"><i class="fas fa-magic"></i> 任务指引生成器</h2>
+        
+        <div class="data-panel">
+            <div class="data-panel-title">
+                <i class="fas fa-database"></i> 模板与数据管理
+            </div>
+            <div class="data-btns">
+                <button class="btn-data btn-export-json" onclick="exportJSON()"><i class="fas fa-download"></i> 导出 JSON</button>
+                <button class="btn-data btn-import-json" onclick="document.getElementById('jsonUpload').click()"><i class="fas fa-upload"></i> 导入 JSON</button>
+                <input type="file" id="jsonUpload" style="display: none;" accept=".json" onchange="importJSON(event)">
+            </div>
+        </div>
+
+        <div class="top-inputs">
+            <input type="text" id="classInput" class="input-item" placeholder="班级（如：三(1)班）">
+            <input type="text" id="unitInput" class="input-item" placeholder="单元（如：Unit 5）">
+            <input type="text" id="dateInput" class="input-item" placeholder="日期">
+        </div>
+
+        <button class="btn-add" id="addTaskBtn"><i class="fas fa-plus-circle"></i> 新增 Day 任务阶段</button>
+        <div id="taskContainer"></div>
+
+        <div style="margin-top:20px;">
+            <label style="font-weight:bold; font-size:14px; color: #444;">底部温馨提示：</label>
+            <textarea id="tipInput" class="input-item" style="height:80px; margin-top:8px;" placeholder="在此输入给家长或学生的温馨提示..."></textarea>
+        </div>
+
+        <div class="final-actions">
+            <button class="btn-main btn-export-img" id="downloadImgBtn"><i class="fas fa-image"></i> 生成并导出指引图片</button>
+        </div>
+        <div id="autoSaveTip">✅ 已自动保存至浏览器缓存</div>
+    </div>
+
+    <div class="preview-area">
+        <div class="guide-paper" id="guidePaper">
+            <div class="p-header">
+                <h1 style="color:var(--primary-color); font-size:28px;">课后任务进程指引</h1>
+                <div style="font-size:12px; color:#888; font-weight:bold; letter-spacing:2px; margin-top: 4px;">HOMEWORK PROGRESS GUIDE</div>
+                <div class="p-tags">
+                    <span class="p-tag" id="p-class">未填班级</span>
+                    <span class="p-tag" id="p-unit">未填单元</span>
+                    <span class="p-tag" id="p-date">未选日期</span>
+                </div>
+            </div>
+
+            <div id="p-list"></div>
+
+            <div class="p-tip-box" id="p-tip-area">
+                <div style="font-weight:bold; margin-bottom:5px;"><i class="fas fa-lightbulb" style="color:#faad14;"></i> 温馨提示 / Tips</div>
+                <div id="p-tip"></div>
+            </div>
+
+            <div class="p-footer">
+                坚持每天进步一点点，未来一定会感谢现在的努力！<br>
+                🚀 稳定进步 · 追求卓越 · 开启未来
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const config = {
+        voice: { label: '语音任务', icon: 'fa-microphone' },
+        write: { label: '书写任务', icon: 'fa-pen-nib' },
+        listen: { label: '磨耳朵任务', icon: 'fa-headphones' },
+        word: { label: '单词闯关', icon: 'fa-spell-check' },
+        extend: { label: '拓展任务', icon: 'fa-star' }
+    };
+
+    // 节流定时器
+    let autoSaveTimeout = null;
+
+    // 初始化日期选择器
+    flatpickr("#dateInput", { 
+        locale: "zh", 
+        dateFormat: "Y.m.d", 
+        defaultDate: new Date(), 
+        onChange: triggerUpdate 
+    });
+
+    // ==========================================
+    // 1. 数据提取与生成逻辑
+    // ==========================================
+    
+    // 提取当前界面上的所有数据，生成一个 Object
+    function getCurrentData() {
+        const tasks = [];
+        document.querySelectorAll('.task-card').forEach(card => {
+            const taskObj = {
+                day: card.querySelector('.day-num').value,
+                week: card.querySelector('.week-num').value,
+                items: {}
+            };
+            Object.keys(config).forEach(type => {
+                taskObj.items[type] = {
+                    checked: card.querySelector(`.cb-${type}`).checked,
+                    content: card.querySelector(`.ta-${type}`).value
+                };
+            });
+            tasks.push(taskObj);
+        });
+
+        return {
+            class: document.getElementById('classInput').value,
+            unit: document.getElementById('unitInput').value,
+            date: document.getElementById('dateInput').value,
+            tip: document.getElementById('tipInput').value,
+            tasks: tasks
+        };
+    }
+
+    // 将 Data Object 渲染到界面上
+    function applyDataToUI(data) {
+        document.getElementById('classInput').value = data.class || '';
+        document.getElementById('unitInput').value = data.unit || '';
+        document.getElementById('dateInput').value = data.date || '';
+        document.getElementById('tipInput').value = data.tip || '';
+
+        document.getElementById('taskContainer').innerHTML = '';
+        if (data.tasks && data.tasks.length > 0) {
+            data.tasks.forEach(t => createTaskCard(t));
+        } else {
+            createTaskCard(); // 如果为空，默认给个空的
+        }
+        triggerUpdate(); // 同步右侧预览
+    }
+
+    // ==========================================
+    // 2. 浏览器缓存自动保存 (Auto-Save)
+    // ==========================================
+    
+    function triggerUpdate() {
+        syncPreview();
+        
+        // 防抖自动保存：避免打字时频繁触发，停顿 800ms 后自动保存
+        clearTimeout(autoSaveTimeout);
+        autoSaveTimeout = setTimeout(() => {
+            const data = getCurrentData();
+            localStorage.setItem('autosave_homework_data', JSON.stringify(data));
+            
+            // 显示自动保存提示
+            const tip = document.getElementById('autoSaveTip');
+            tip.style.opacity = '1';
+            setTimeout(() => tip.style.opacity = '0', 1500);
+        }, 800);
+    }
+
+    // 页面加载时恢复自动保存的数据
+    window.onload = () => {
+        const raw = localStorage.getItem('autosave_homework_data');
+        if (raw) {
+            try {
+                applyDataToUI(JSON.parse(raw));
+            } catch (e) {
+                createTaskCard();
+            }
+        } else {
+            createTaskCard();
+        }
+    };
+
+    // ==========================================
+    // 3. JSON 导入与导出 (独立逻辑)
+    // ==========================================
+    
+    // 导出 JSON
+    function exportJSON() {
+        const data = getCurrentData();
+        const jsonStr = JSON.stringify(data, null, 2); // 格式化 JSON
+        const blob = new Blob([jsonStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        
+        // 独立命名逻辑：任务配置备份_年月日_时分秒.json
+        const now = new Date();
+        const timeStr = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}_${now.getHours()}${now.getMinutes()}${now.getSeconds()}`;
+        
+        a.href = url;
+        a.download = `任务配置备份_${timeStr}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // 导入 JSON
+    function importJSON(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                applyDataToUI(data);
+                // 导入后立刻触发一次自动保存
+                const tip = document.getElementById('autoSaveTip');
+                tip.innerText = "✅ JSON 数据导入成功并已覆盖缓存";
+                tip.style.opacity = '1';
+                setTimeout(() => { tip.style.opacity = '0'; tip.innerText = "✅ 已自动保存至浏览器缓存"; }, 2000);
+            } catch (err) {
+                alert("❌ JSON 文件格式错误或已损坏！");
+            }
+        };
+        reader.readAsText(file);
+        
+        // 重置 input，允许重复上传同一个文件
+        event.target.value = '';
+    }
+
+    // ==========================================
+    // 4. 图片导出 (独立命名)
+    // ==========================================
+    
+    document.getElementById('downloadImgBtn').onclick = () => {
+        // 独立命名逻辑：班级-任务进程建议-日期.png
+        const cName = document.getElementById('classInput').value.trim() || '未命名班级';
+        const dName = document.getElementById('dateInput').value.trim() || '日期未知';
+        const fileName = `${cName}-任务进程建议-${dName}.png`;
+
+        html2canvas(document.getElementById('guidePaper'), { scale: 2, useCORS: true }).then(canvas => {
+            const a = document.createElement('a');
+            a.href = canvas.toDataURL('image/png');
+            a.download = fileName;
+            a.click();
+        });
+    };
+
+    // ==========================================
+    // 5. UI 渲染与事件绑定
+    // ==========================================
+    
+    function syncPreview() {
+        document.getElementById('p-class').innerText = document.getElementById('classInput').value || '未填班级';
+        document.getElementById('p-unit').innerText = document.getElementById('unitInput').value || '未填单元';
+        document.getElementById('p-date').innerText = document.getElementById('dateInput').value || '未选日期';
+        document.getElementById('p-tip').innerText = document.getElementById('tipInput').value || '暂无内容。';
+
+        const pList = document.getElementById('p-list');
+        pList.innerHTML = '';
+
+        document.querySelectorAll('.task-card').forEach(card => {
+            const d = card.querySelector('.day-num').value;
+            const w = card.querySelector('.week-num').value;
+            let html = `<div class="p-item"><div class="p-day-label">Day ${d} / 星期${w}</div>`;
+            
+            let hasAny = false;
+            Object.keys(config).forEach(type => {
+                const checked = card.querySelector(`.cb-${type}`).checked;
+                const text = card.querySelector(`.ta-${type}`).value;
+                if (checked) {
+                    hasAny = true;
+                    html += `<div class="p-row"><b><i class="fas ${config[type].icon}"></i> ${config[type].label}</b><p>${text || '(见课本)'}</p></div>`;
+                }
+            });
+            if (!hasAny) html += `<p style="font-size:12px; color:#999; padding-left:24px;">(此阶段暂未安排任务)</p>`;
+            html += `</div>`;
+            pList.innerHTML += html;
+        });
+    }
+
+    function createTaskCard(data = null) {
+        const container = document.getElementById('taskContainer');
+        const card = document.createElement('div');
+        card.className = 'task-card';
+        
+        let typesHtml = '';
+        Object.keys(config).forEach(type => {
+            const isChecked = data ? (data.items[type].checked ? 'checked' : '') : '';
+            const content = data ? data.items[type].content : '';
+            typesHtml += `
+                <div class="type-row">
+                    <label><input type="checkbox" class="cb-${type}" ${isChecked}> ${config[type].label}</label>
+                    <textarea class="ta-${type}" placeholder="输入任务详情...">${content}</textarea>
+                </div>`;
+        });
+
+        card.innerHTML = `
+            <div class="day-group">
+                Day <input type="text" class="day-num" value="${data ? data.day : (container.children.length + 1)}">
+                / 星期 <input type="text" class="week-num" value="${data ? data.week : '一'}">
+            </div>
+            ${typesHtml}
+            <button class="btn-del" onclick="this.parentElement.remove(); triggerUpdate();"><i class="fas fa-trash-alt"></i> 移除此天任务</button>
+        `;
+        container.appendChild(card);
+        
+        // 为新生成的输入框和复选框绑定事件
+        card.querySelectorAll('input, textarea').forEach(el => {
+            el.addEventListener('input', triggerUpdate);
+            el.addEventListener('change', triggerUpdate);
+        });
+        
+        triggerUpdate();
+    }
+
+    // 绑定顶部基础输入框的事件
+    ['classInput', 'unitInput', 'tipInput'].forEach(id => {
+        document.getElementById(id).addEventListener('input', triggerUpdate);
+    });
+    
+    document.getElementById('addTaskBtn').onclick = () => createTaskCard();
+
+</script>
+</body>
+</html>
