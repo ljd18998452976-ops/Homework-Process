@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -455,6 +457,231 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* =========================
+           深色工作区主题
+           仅改变操作界面，导出纸张保持白色
+           ========================= */
+        :root {
+            --workspace-bg: #1b2030;
+            --workspace-panel: #242a3a;
+            --workspace-card: #2c3346;
+            --workspace-card-2: #31394e;
+            --workspace-border: #46506a;
+            --workspace-text: #edf2f8;
+            --workspace-muted: #aeb8c8;
+            --workspace-input: #202638;
+            --workspace-hover: #38425a;
+        }
+
+        html {
+            background: var(--workspace-bg);
+        }
+
+        body {
+            background: var(--workspace-bg) !important;
+            color: var(--workspace-text);
+        }
+
+        /* 左侧编辑区 */
+        .edit-area {
+            background: var(--workspace-panel) !important;
+            box-shadow: 0 6px 22px rgba(0,0,0,0.28) !important;
+            color: var(--workspace-text);
+        }
+
+        .edit-area > h2 {
+            color: #f4f7fb !important;
+        }
+
+        .data-panel {
+            background: var(--workspace-card) !important;
+            border-color: var(--workspace-border) !important;
+        }
+
+        .data-panel-title {
+            color: var(--workspace-text) !important;
+        }
+
+        .task-card {
+            background: var(--workspace-card) !important;
+            border-color: var(--workspace-border) !important;
+        }
+
+        .type-row {
+            background: var(--workspace-card-2) !important;
+            border-color: var(--workspace-border) !important;
+        }
+
+        .day-group {
+            color: #dce8ff !important;
+        }
+
+        .edit-area label,
+        .edit-area .type-row label {
+            color: var(--workspace-text) !important;
+        }
+
+        /* 覆盖底部“温馨提示”内联浅色文字 */
+        .edit-area label[style] {
+            color: var(--workspace-text) !important;
+        }
+
+        /* 输入框 / 文本框 */
+        .edit-area input:not([type="checkbox"]):not([type="file"]),
+        .edit-area textarea,
+        .edit-area select,
+        .input-item,
+        .day-group input,
+        .type-row textarea {
+            background: var(--workspace-input) !important;
+            color: #f7f9fc !important;
+            border-color: var(--workspace-border) !important;
+        }
+
+        .edit-area input::placeholder,
+        .edit-area textarea::placeholder {
+            color: #8692a6 !important;
+        }
+
+        .edit-area input:focus,
+        .edit-area textarea:focus,
+        .edit-area select:focus,
+        .input-item:focus,
+        .day-group input:focus,
+        .type-row textarea:focus {
+            border-color: #58a6ff !important;
+            box-shadow: 0 0 0 2px rgba(88,166,255,0.12) !important;
+        }
+
+        .edit-area input[type="checkbox"] {
+            accent-color: var(--accent-color);
+        }
+
+        /* 数据按钮 */
+        .btn-export-json {
+            background: #30384b !important;
+            border-color: #6d8fc1 !important;
+            color: #eaf2ff !important;
+        }
+
+        .btn-export-json:hover {
+            background: var(--workspace-hover) !important;
+        }
+
+        .btn-import-json {
+            background: #0d4b80 !important;
+            color: #fff !important;
+        }
+
+        .btn-import-json:hover {
+            background: #12619f !important;
+        }
+
+        /* 新增任务阶段按钮 */
+        .btn-add {
+            background: #20283a !important;
+            border-color: #4f9cff !important;
+            color: #75b4ff !important;
+        }
+
+        .btn-add:hover {
+            background: #293651 !important;
+        }
+
+        #autoSaveTip {
+            color: #67d78a !important;
+        }
+
+        /* 右侧仅工作区变深色 */
+        .preview-area {
+            background: var(--workspace-bg) !important;
+        }
+
+        /* 真正导出的纸张必须保持浅色 */
+        #guidePaper,
+        .guide-paper {
+            background: #ffffff !important;
+            color: #333333 !important;
+            color-scheme: light;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.32) !important;
+        }
+
+        /* 防止深色工作区的文字规则影响预览纸张 */
+        #guidePaper .p-row b {
+            color: #222222 !important;
+        }
+
+        #guidePaper .p-row p {
+            color: #444444 !important;
+        }
+
+        #guidePaper .p-tip-box,
+        #guidePaper .p-tip-box * {
+            color: #333333;
+        }
+
+        /* 深色滚动条 */
+        .edit-area::-webkit-scrollbar-track,
+        .preview-area::-webkit-scrollbar-track {
+            background-color: #1b2030 !important;
+            border-left-color: #343d52 !important;
+        }
+
+        .edit-area::-webkit-scrollbar-thumb,
+        .preview-area::-webkit-scrollbar-thumb {
+            background-color: #5876a5 !important;
+            border-color: #1b2030 !important;
+        }
+
+        .edit-area::-webkit-scrollbar-thumb:hover,
+        .preview-area::-webkit-scrollbar-thumb:hover {
+            background-color: #6c8fc3 !important;
+        }
+
+        .edit-area::-webkit-scrollbar-button:single-button:vertical:decrement,
+        .preview-area::-webkit-scrollbar-button:single-button:vertical:decrement,
+        .edit-area::-webkit-scrollbar-button:single-button:vertical:increment,
+        .preview-area::-webkit-scrollbar-button:single-button:vertical:increment {
+            background-color: #242a3a !important;
+            border-left-color: #343d52 !important;
+        }
+
+        /* 日期选择器也跟随深色工作区 */
+        .flatpickr-calendar {
+            background: #252c3c !important;
+            border-color: #46506a !important;
+            box-shadow: 0 10px 28px rgba(0,0,0,0.35) !important;
+        }
+
+        .flatpickr-months .flatpickr-month,
+        .flatpickr-current-month .flatpickr-monthDropdown-months,
+        .flatpickr-current-month input.cur-year,
+        span.flatpickr-weekday,
+        .flatpickr-day {
+            color: #edf2f8 !important;
+            fill: #edf2f8 !important;
+        }
+
+        .flatpickr-day:hover,
+        .flatpickr-day:focus {
+            background: #3a455d !important;
+            border-color: #3a455d !important;
+        }
+
+        .flatpickr-day.selected,
+        .flatpickr-day.startRange,
+        .flatpickr-day.endRange {
+            background: var(--accent-color) !important;
+            border-color: var(--accent-color) !important;
+            color: #fff !important;
+        }
+
+        .flatpickr-day.prevMonthDay,
+        .flatpickr-day.nextMonthDay {
+            color: #768399 !important;
+        }
+
     </style>
 </head>
 
