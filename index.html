@@ -683,6 +683,117 @@
         }
 
     </style>
+
+<style id="charcoal-soft-theme">
+    :root {
+        --charcoal-bg: #171717;
+        --charcoal-panel: #202020;
+        --charcoal-card: #282828;
+        --charcoal-card-2: #2e2e2e;
+        --charcoal-input: #1c1c1c;
+        --charcoal-border: #414141;
+        --soft-text: #d4d0c8;
+        --soft-text-2: #aaa59d;
+        --soft-text-3: #8f8a83;
+    }
+
+    html, body {
+        background: var(--charcoal-bg) !important;
+    }
+</style>
+
+<style id="charcoal-task-theme">
+    body {
+        color: var(--soft-text) !important;
+    }
+
+    .edit-area {
+        background: var(--charcoal-panel) !important;
+        color: var(--soft-text) !important;
+        box-shadow: 0 8px 26px rgba(0,0,0,.34) !important;
+    }
+
+    .edit-area > h2,
+    .edit-area label,
+    .edit-area .data-panel-title,
+    .edit-area .day-group,
+    .edit-area .type-row label {
+        color: var(--soft-text) !important;
+    }
+
+    .data-panel,
+    .task-card {
+        background: var(--charcoal-card) !important;
+        border-color: var(--charcoal-border) !important;
+    }
+
+    .type-row {
+        background: var(--charcoal-card-2) !important;
+        border-color: var(--charcoal-border) !important;
+    }
+
+    .edit-area input:not([type="checkbox"]):not([type="file"]),
+    .edit-area textarea,
+    .edit-area select,
+    .input-item,
+    .day-group input,
+    .type-row textarea {
+        background: var(--charcoal-input) !important;
+        color: var(--soft-text) !important;
+        border-color: var(--charcoal-border) !important;
+    }
+
+    .edit-area input::placeholder,
+    .edit-area textarea::placeholder {
+        color: var(--soft-text-3) !important;
+    }
+
+    .btn-export-json {
+        background: #2b2b2b !important;
+        border-color: #626262 !important;
+        color: var(--soft-text) !important;
+    }
+
+    .btn-import-json {
+        background: #3a4148 !important;
+        color: var(--soft-text) !important;
+    }
+
+    .btn-add {
+        background: #242424 !important;
+        border-color: #6e7883 !important;
+        color: #b7c0c9 !important;
+    }
+
+    .btn-add:hover,
+    .btn-export-json:hover {
+        background: #333 !important;
+    }
+
+    .preview-area {
+        background: var(--charcoal-bg) !important;
+    }
+
+    .edit-area::-webkit-scrollbar-track,
+    .preview-area::-webkit-scrollbar-track {
+        background-color: #171717 !important;
+        border-left-color: #303030 !important;
+    }
+
+    .edit-area::-webkit-scrollbar-thumb,
+    .preview-area::-webkit-scrollbar-thumb {
+        background-color: #666 !important;
+        border-color: #171717 !important;
+    }
+
+    /* 导出纸张继续保持原来的白色，不受深色主题影响 */
+    #guidePaper, .guide-paper {
+        background: #ffffff !important;
+        color: #333333 !important;
+        color-scheme: light !important;
+    }
+</style>
+
 </head>
 
 <body>
