@@ -1,797 +1,796 @@
 
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>任务进程生成器</title>
-
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- Flatpickr -->
-    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
-    <script src="https://cdn.bootcdn.net/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
-    <script src="https://cdn.bootcdn.net/ajax/libs/flatpickr/4.6.13/l10n/zh.min.js"></script>
-
-    <!-- html2canvas：主 CDN + 自动备用 CDN -->
-    <script
-        src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"
-        onerror="this.onerror=null;this.src='https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js';">
-    </script>
-
-    <style>
-        :root {
-            --primary-color: #003366;
-            --accent-color: #007bff;
-            --success-color: #28a745;
-            --warning-color: #f39c12;
-            --danger-color: #dc3545;
-            --bg-body: #f4f7f9;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-body);
-            padding: 20px;
-            color: #333;
-        }
-
-        .container {
-            display: flex;
-            width: 100%;
-            max-width: 1400px;
-            margin: 0 auto;
-            gap: 30px;
-        }
-
-        /* =========================
-           左侧编辑器
-           ========================= */
-        .edit-area {
-            flex: 1.2;
-            background: #fff;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-
-            max-height: calc(100vh - 40px);
-            overflow-y: auto;
-        }
-
-        .top-inputs {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .input-item {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            outline: none;
-            transition: 0.3s;
-        }
-
-        .input-item:focus {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 5px rgba(0,123,255,0.2);
-        }
-
-        /* =========================
-           数据管理面板
-           ========================= */
-        .data-panel {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            padding: 12px 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 15px;
-        }
-
-        .data-panel-title {
-            font-size: 13px;
-            font-weight: bold;
-            color: #495057;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .data-btns {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .btn-data {
-            padding: 6px 12px;
-            border-radius: 4px;
-            border: 1px solid transparent;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            transition: 0.2s;
-        }
-
-        .btn-export-json {
-            background: #fff;
-            border-color: var(--primary-color);
-            color: var(--primary-color);
-        }
-
-        .btn-import-json {
-            background: var(--primary-color);
-            color: #fff;
-        }
-
-        .btn-export-json:hover {
-            background: #f0f4f8;
-        }
-
-        .btn-import-json:hover {
-            background: #002244;
-        }
-
-        /* =========================
-           任务卡片
-           ========================= */
-        .task-card {
-            background: #fcfcfc;
-            border: 1px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-        }
-
-        .day-group {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 10px;
-            font-weight: bold;
-            color: var(--primary-color);
-        }
-
-        .day-group input {
-            width: 60px;
-            text-align: center;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            padding: 4px;
-            outline: none;
-        }
-
-        .day-group input:focus {
-            border-color: var(--accent-color);
-        }
-
-        .type-row {
-            background: #fff;
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid #eee;
-            margin-bottom: 8px;
-        }
-
-        .type-row label {
-            font-size: 13px;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .type-row textarea {
-            width: 100%;
-            height: 50px;
-            margin-top: 5px;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            resize: vertical;
-            font-size: 13px;
-            outline: none;
-        }
-
-        .type-row textarea:focus {
-            border-color: var(--accent-color);
-        }
-
-        .btn-add {
-            width: 100%;
-            padding: 12px;
-            border: 2px dashed var(--accent-color);
-            color: var(--accent-color);
-            background: #fff;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-bottom: 20px;
-            transition: 0.2s;
-        }
-
-        .btn-add:hover {
-            background: #f0f7ff;
-        }
-
-        .btn-del {
-            color: var(--danger-color);
-            border: none;
-            background: none;
-            cursor: pointer;
-            font-size: 12px;
-            margin-top: 8px;
-        }
-
-        .final-actions {
-            display: flex;
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .btn-main {
-            flex: 1;
-            padding: 15px;
-            border-radius: 10px;
-            border: none;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 16px;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .btn-export-img {
-            background: var(--success-color);
-            transition: 0.2s;
-        }
-
-        .btn-export-img:hover {
-            background: #218838;
-        }
-
-        .btn-export-img:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
-        #autoSaveTip {
-            font-size: 12px;
-            color: var(--success-color);
-            text-align: center;
-            margin-top: 10px;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        /* =========================
-           右侧预览区
-           ========================= */
-        .preview-area {
-            flex: 1;
-            max-height: calc(100vh - 40px);
-            overflow-y: auto;
-            padding-right: 8px;
-        }
-
-        .guide-paper {
-            background: #fff;
-            padding: 40px;
-            border-radius: 4px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            width: 100%;
-        }
-
-        .p-header {
-            text-align: center;
-            border-bottom: 2px solid var(--primary-color);
-            padding-bottom: 15px;
-            margin-bottom: 25px;
-        }
-
-        .p-tags {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 10px;
-            flex-wrap: wrap;
-        }
-
-        .p-tag {
-            background: #f0f4f8;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 13px;
-            color: var(--primary-color);
-            font-weight: bold;
-        }
-
-        .p-item {
-            border-left: 4px solid var(--accent-color);
-            padding-left: 15px;
-            margin-bottom: 25px;
-        }
-
-        .p-day-label {
-            background: var(--accent-color);
-            color: #fff;
-            padding: 2px 12px;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: bold;
-            display: inline-block;
-            margin-bottom: 10px;
-        }
-
-        .p-row {
-            margin-bottom: 8px;
-        }
-
-        .p-row b {
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .p-row p {
-            font-size: 14px;
-            padding-left: 24px;
-            color: #444;
-            white-space: pre-wrap;
-            margin-top: 4px;
-            overflow-wrap: anywhere;
-        }
-
-        .p-tip-box {
-            background: #fff9db;
-            border: 1px solid #ffe58f;
-            padding: 15px;
-            border-radius: 6px;
-            font-size: 14px;
-            margin-top: 30px;
-        }
-
-        .p-footer {
-            background: var(--primary-color);
-            color: #fff;
-            text-align: center;
-            padding: 20px;
-            margin-top: 40px;
-            font-size: 12px;
-            border-radius: 4px;
-            line-height: 1.6;
-        }
-
-        /* =========================
-           自定义滚动条
-           ========================= */
-        .edit-area::-webkit-scrollbar,
-        .preview-area::-webkit-scrollbar {
-            width: 14px;
-        }
-
-        .edit-area::-webkit-scrollbar-track,
-        .preview-area::-webkit-scrollbar-track {
-            background-color: #f4f6f9;
-            border-left: 1px solid #e2e8f0;
-        }
-
-        .edit-area::-webkit-scrollbar-thumb,
-        .preview-area::-webkit-scrollbar-thumb {
-            background-color: #4a72a5;
-            border-radius: 2px;
-            border: 2px solid #f4f6f9;
-        }
-
-        .edit-area::-webkit-scrollbar-thumb:hover,
-        .preview-area::-webkit-scrollbar-thumb:hover {
-            background-color: #3b5c87;
-        }
-
-        .edit-area::-webkit-scrollbar-button:single-button:vertical:decrement,
-        .preview-area::-webkit-scrollbar-button:single-button:vertical:decrement {
-            height: 16px;
-            background-color: #f4f6f9;
-            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' fill='%234a72a5'><polygon points='50,20 10,80 90,80'/></svg>");
-            background-size: 9px;
-            background-position: center;
-            background-repeat: no-repeat;
-            border-left: 1px solid #e2e8f0;
-        }
-
-        .edit-area::-webkit-scrollbar-button:single-button:vertical:decrement:hover,
-        .preview-area::-webkit-scrollbar-button:single-button:vertical:decrement:hover {
-            background-color: #e2e8f0;
-        }
-
-        .edit-area::-webkit-scrollbar-button:single-button:vertical:increment,
-        .preview-area::-webkit-scrollbar-button:single-button:vertical:increment {
-            height: 16px;
-            background-color: #f4f6f9;
-            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' fill='%234a72a5'><polygon points='50,80 10,20 90,20'/></svg>");
-            background-size: 9px;
-            background-position: center;
-            background-repeat: no-repeat;
-            border-left: 1px solid #e2e8f0;
-        }
-
-        .edit-area::-webkit-scrollbar-button:single-button:vertical:increment:hover,
-        .preview-area::-webkit-scrollbar-button:single-button:vertical:increment:hover {
-            background-color: #e2e8f0;
-        }
-
-        @media (max-width: 900px) {
-            .container {
-                flex-direction: column;
-            }
-
-            .edit-area,
-            .preview-area {
-                max-height: none;
-                overflow: visible;
-            }
-
-            .top-inputs {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* =========================
-           深色工作区主题
-           仅改变操作界面，导出纸张保持白色
-           ========================= */
-        :root {
-            --workspace-bg: #1b2030;
-            --workspace-panel: #242a3a;
-            --workspace-card: #2c3346;
-            --workspace-card-2: #31394e;
-            --workspace-border: #46506a;
-            --workspace-text: #edf2f8;
-            --workspace-muted: #aeb8c8;
-            --workspace-input: #202638;
-            --workspace-hover: #38425a;
-        }
-
-        html {
-            background: var(--workspace-bg);
-        }
-
-        body {
-            background: var(--workspace-bg) !important;
-            color: var(--workspace-text);
-        }
-
-        /* 左侧编辑区 */
-        .edit-area {
-            background: var(--workspace-panel) !important;
-            box-shadow: 0 6px 22px rgba(0,0,0,0.28) !important;
-            color: var(--workspace-text);
-        }
-
-        .edit-area > h2 {
-            color: #f4f7fb !important;
-        }
-
-        .data-panel {
-            background: var(--workspace-card) !important;
-            border-color: var(--workspace-border) !important;
-        }
-
-        .data-panel-title {
-            color: var(--workspace-text) !important;
-        }
-
-        .task-card {
-            background: var(--workspace-card) !important;
-            border-color: var(--workspace-border) !important;
-        }
-
-        .type-row {
-            background: var(--workspace-card-2) !important;
-            border-color: var(--workspace-border) !important;
-        }
-
-        .day-group {
-            color: #dce8ff !important;
-        }
-
-        .edit-area label,
-        .edit-area .type-row label {
-            color: var(--workspace-text) !important;
-        }
-
-        /* 覆盖底部“温馨提示”内联浅色文字 */
-        .edit-area label[style] {
-            color: var(--workspace-text) !important;
-        }
-
-        /* 输入框 / 文本框 */
-        .edit-area input:not([type="checkbox"]):not([type="file"]),
-        .edit-area textarea,
-        .edit-area select,
-        .input-item,
-        .day-group input,
-        .type-row textarea {
-            background: var(--workspace-input) !important;
-            color: #f7f9fc !important;
-            border-color: var(--workspace-border) !important;
-        }
-
-        .edit-area input::placeholder,
-        .edit-area textarea::placeholder {
-            color: #8692a6 !important;
-        }
-
-        .edit-area input:focus,
-        .edit-area textarea:focus,
-        .edit-area select:focus,
-        .input-item:focus,
-        .day-group input:focus,
-        .type-row textarea:focus {
-            border-color: #58a6ff !important;
-            box-shadow: 0 0 0 2px rgba(88,166,255,0.12) !important;
-        }
-
-        .edit-area input[type="checkbox"] {
-            accent-color: var(--accent-color);
-        }
-
-        /* 数据按钮 */
-        .btn-export-json {
-            background: #30384b !important;
-            border-color: #6d8fc1 !important;
-            color: #eaf2ff !important;
-        }
-
-        .btn-export-json:hover {
-            background: var(--workspace-hover) !important;
-        }
-
-        .btn-import-json {
-            background: #0d4b80 !important;
-            color: #fff !important;
-        }
-
-        .btn-import-json:hover {
-            background: #12619f !important;
-        }
-
-        /* 新增任务阶段按钮 */
-        .btn-add {
-            background: #20283a !important;
-            border-color: #4f9cff !important;
-            color: #75b4ff !important;
-        }
-
-        .btn-add:hover {
-            background: #293651 !important;
-        }
-
-        #autoSaveTip {
-            color: #67d78a !important;
-        }
-
-        /* 右侧仅工作区变深色 */
-        .preview-area {
-            background: var(--workspace-bg) !important;
-        }
-
-        /* 真正导出的纸张必须保持浅色 */
-        #guidePaper,
-        .guide-paper {
-            background: #ffffff !important;
-            color: #333333 !important;
-            color-scheme: light;
-            box-shadow: 0 12px 32px rgba(0,0,0,0.32) !important;
-        }
-
-        /* 防止深色工作区的文字规则影响预览纸张 */
-        #guidePaper .p-row b {
-            color: #222222 !important;
-        }
-
-        #guidePaper .p-row p {
-            color: #444444 !important;
-        }
-
-        #guidePaper .p-tip-box,
-        #guidePaper .p-tip-box * {
-            color: #333333;
-        }
-
-        /* 深色滚动条 */
-        .edit-area::-webkit-scrollbar-track,
-        .preview-area::-webkit-scrollbar-track {
-            background-color: #1b2030 !important;
-            border-left-color: #343d52 !important;
-        }
-
-        .edit-area::-webkit-scrollbar-thumb,
-        .preview-area::-webkit-scrollbar-thumb {
-            background-color: #5876a5 !important;
-            border-color: #1b2030 !important;
-        }
-
-        .edit-area::-webkit-scrollbar-thumb:hover,
-        .preview-area::-webkit-scrollbar-thumb:hover {
-            background-color: #6c8fc3 !important;
-        }
-
-        .edit-area::-webkit-scrollbar-button:single-button:vertical:decrement,
-        .preview-area::-webkit-scrollbar-button:single-button:vertical:decrement,
-        .edit-area::-webkit-scrollbar-button:single-button:vertical:increment,
-        .preview-area::-webkit-scrollbar-button:single-button:vertical:increment {
-            background-color: #242a3a !important;
-            border-left-color: #343d52 !important;
-        }
-
-        /* 日期选择器也跟随深色工作区 */
-        .flatpickr-calendar {
-            background: #252c3c !important;
-            border-color: #46506a !important;
-            box-shadow: 0 10px 28px rgba(0,0,0,0.35) !important;
-        }
-
-        .flatpickr-months .flatpickr-month,
-        .flatpickr-current-month .flatpickr-monthDropdown-months,
-        .flatpickr-current-month input.cur-year,
-        span.flatpickr-weekday,
-        .flatpickr-day {
-            color: #edf2f8 !important;
-            fill: #edf2f8 !important;
-        }
-
-        .flatpickr-day:hover,
-        .flatpickr-day:focus {
-            background: #3a455d !important;
-            border-color: #3a455d !important;
-        }
-
-        .flatpickr-day.selected,
-        .flatpickr-day.startRange,
-        .flatpickr-day.endRange {
-            background: var(--accent-color) !important;
-            border-color: var(--accent-color) !important;
-            color: #fff !important;
-        }
-
-        .flatpickr-day.prevMonthDay,
-        .flatpickr-day.nextMonthDay {
-            color: #768399 !important;
-        }
-
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>任务进程生成器</title>
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- Flatpickr -->
+<link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+<script src="https://cdn.bootcdn.net/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/flatpickr/4.6.13/l10n/zh.min.js"></script>
+
+<!-- html2canvas：主 CDN + 自动备用 CDN -->
+<script
+src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"
+onerror="this.onerror=null;this.src='https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js';">
+</script>
+
+<style>
+:root {
+--primary-color: #003366;
+--accent-color: #007bff;
+--success-color: #28a745;
+--warning-color: #f39c12;
+--danger-color: #dc3545;
+--bg-body: #f4f7f9;
+}
+
+* {
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+body {
+background-color: var(--bg-body);
+padding: 20px;
+color: #333;
+}
+
+.container {
+display: flex;
+width: 100%;
+max-width: 1400px;
+margin: 0 auto;
+gap: 30px;
+}
+
+/* =========================
+左侧编辑器
+========================= */
+.edit-area {
+flex: 1.2;
+background: #fff;
+padding: 25px;
+border-radius: 12px;
+box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+
+max-height: calc(100vh - 40px);
+overflow-y: auto;
+}
+
+.top-inputs {
+display: grid;
+grid-template-columns: 1fr 1fr 1fr;
+gap: 10px;
+margin-bottom: 20px;
+}
+
+.input-item {
+width: 100%;
+padding: 10px;
+border: 1px solid #ddd;
+border-radius: 6px;
+outline: none;
+transition: 0.3s;
+}
+
+.input-item:focus {
+border-color: var(--accent-color);
+box-shadow: 0 0 5px rgba(0,123,255,0.2);
+}
+
+/* =========================
+数据管理面板
+========================= */
+.data-panel {
+background: #f8f9fa;
+border: 1px solid #e9ecef;
+padding: 12px 15px;
+border-radius: 8px;
+margin-bottom: 20px;
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 15px;
+}
+
+.data-panel-title {
+font-size: 13px;
+font-weight: bold;
+color: #495057;
+display: flex;
+align-items: center;
+gap: 6px;
+}
+
+.data-btns {
+display: flex;
+gap: 8px;
+flex-wrap: wrap;
+}
+
+.btn-data {
+padding: 6px 12px;
+border-radius: 4px;
+border: 1px solid transparent;
+cursor: pointer;
+font-size: 12px;
+font-weight: bold;
+display: flex;
+align-items: center;
+gap: 5px;
+transition: 0.2s;
+}
+
+.btn-export-json {
+background: #fff;
+border-color: var(--primary-color);
+color: var(--primary-color);
+}
+
+.btn-import-json {
+background: var(--primary-color);
+color: #fff;
+}
+
+.btn-export-json:hover {
+background: #f0f4f8;
+}
+
+.btn-import-json:hover {
+background: #002244;
+}
+
+/* =========================
+任务卡片
+========================= */
+.task-card {
+background: #fcfcfc;
+border: 1px solid #e0e0e0;
+border-radius: 10px;
+padding: 15px;
+margin-bottom: 15px;
+}
+
+.day-group {
+display: flex;
+align-items: center;
+gap: 8px;
+margin-bottom: 10px;
+font-weight: bold;
+color: var(--primary-color);
+}
+
+.day-group input {
+width: 60px;
+text-align: center;
+border: 1px solid #ccc;
+border-radius: 4px;
+padding: 4px;
+outline: none;
+}
+
+.day-group input:focus {
+border-color: var(--accent-color);
+}
+
+.type-row {
+background: #fff;
+padding: 10px;
+border-radius: 6px;
+border: 1px solid #eee;
+margin-bottom: 8px;
+}
+
+.type-row label {
+font-size: 13px;
+font-weight: bold;
+cursor: pointer;
+display: flex;
+align-items: center;
+gap: 6px;
+}
+
+.type-row textarea {
+width: 100%;
+height: 50px;
+margin-top: 5px;
+padding: 8px;
+border: 1px solid #ddd;
+border-radius: 4px;
+resize: vertical;
+font-size: 13px;
+outline: none;
+}
+
+.type-row textarea:focus {
+border-color: var(--accent-color);
+}
+
+.btn-add {
+width: 100%;
+padding: 12px;
+border: 2px dashed var(--accent-color);
+color: var(--accent-color);
+background: #fff;
+border-radius: 8px;
+cursor: pointer;
+font-weight: bold;
+margin-bottom: 20px;
+transition: 0.2s;
+}
+
+.btn-add:hover {
+background: #f0f7ff;
+}
+
+.btn-del {
+color: var(--danger-color);
+border: none;
+background: none;
+cursor: pointer;
+font-size: 12px;
+margin-top: 8px;
+}
+
+.final-actions {
+display: flex;
+gap: 15px;
+margin-top: 20px;
+}
+
+.btn-main {
+flex: 1;
+padding: 15px;
+border-radius: 10px;
+border: none;
+font-weight: bold;
+cursor: pointer;
+font-size: 16px;
+color: #fff;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 8px;
+}
+
+.btn-export-img {
+background: var(--success-color);
+transition: 0.2s;
+}
+
+.btn-export-img:hover {
+background: #218838;
+}
+
+.btn-export-img:disabled {
+opacity: 0.7;
+cursor: not-allowed;
+}
+
+#autoSaveTip {
+font-size: 12px;
+color: var(--success-color);
+text-align: center;
+margin-top: 10px;
+opacity: 0;
+transition: opacity 0.3s;
+}
+
+/* =========================
+右侧预览区
+========================= */
+.preview-area {
+flex: 1;
+max-height: calc(100vh - 40px);
+overflow-y: auto;
+padding-right: 8px;
+}
+
+.guide-paper {
+background: #fff;
+padding: 40px;
+border-radius: 4px;
+box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+width: 100%;
+}
+
+.p-header {
+text-align: center;
+border-bottom: 2px solid var(--primary-color);
+padding-bottom: 15px;
+margin-bottom: 25px;
+}
+
+.p-tags {
+display: flex;
+justify-content: center;
+gap: 10px;
+margin-top: 10px;
+flex-wrap: wrap;
+}
+
+.p-tag {
+background: #f0f4f8;
+padding: 4px 12px;
+border-radius: 20px;
+font-size: 13px;
+color: var(--primary-color);
+font-weight: bold;
+}
+
+.p-item {
+border-left: 4px solid var(--accent-color);
+padding-left: 15px;
+margin-bottom: 25px;
+}
+
+.p-day-label {
+background: var(--accent-color);
+color: #fff;
+padding: 2px 12px;
+border-radius: 4px;
+font-size: 14px;
+font-weight: bold;
+display: inline-block;
+margin-bottom: 10px;
+}
+
+.p-row {
+margin-bottom: 8px;
+}
+
+.p-row b {
+font-size: 14px;
+display: flex;
+align-items: center;
+gap: 6px;
+}
+
+.p-row p {
+font-size: 14px;
+padding-left: 24px;
+color: #444;
+white-space: pre-wrap;
+margin-top: 4px;
+overflow-wrap: anywhere;
+}
+
+.p-tip-box {
+background: #fff9db;
+border: 1px solid #ffe58f;
+padding: 15px;
+border-radius: 6px;
+font-size: 14px;
+margin-top: 30px;
+}
+
+.p-footer {
+background: var(--primary-color);
+color: #fff;
+text-align: center;
+padding: 20px;
+margin-top: 40px;
+font-size: 12px;
+border-radius: 4px;
+line-height: 1.6;
+}
+
+/* =========================
+自定义滚动条
+========================= */
+.edit-area::-webkit-scrollbar,
+.preview-area::-webkit-scrollbar {
+width: 14px;
+}
+
+.edit-area::-webkit-scrollbar-track,
+.preview-area::-webkit-scrollbar-track {
+background-color: #f4f6f9;
+border-left: 1px solid #e2e8f0;
+}
+
+.edit-area::-webkit-scrollbar-thumb,
+.preview-area::-webkit-scrollbar-thumb {
+background-color: #4a72a5;
+border-radius: 2px;
+border: 2px solid #f4f6f9;
+}
+
+.edit-area::-webkit-scrollbar-thumb:hover,
+.preview-area::-webkit-scrollbar-thumb:hover {
+background-color: #3b5c87;
+}
+
+.edit-area::-webkit-scrollbar-button:single-button:vertical:decrement,
+.preview-area::-webkit-scrollbar-button:single-button:vertical:decrement {
+height: 16px;
+background-color: #f4f6f9;
+background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' fill='%234a72a5'><polygon points='50,20 10,80 90,80'/></svg>");
+background-size: 9px;
+background-position: center;
+background-repeat: no-repeat;
+border-left: 1px solid #e2e8f0;
+}
+
+.edit-area::-webkit-scrollbar-button:single-button:vertical:decrement:hover,
+.preview-area::-webkit-scrollbar-button:single-button:vertical:decrement:hover {
+background-color: #e2e8f0;
+}
+
+.edit-area::-webkit-scrollbar-button:single-button:vertical:increment,
+.preview-area::-webkit-scrollbar-button:single-button:vertical:increment {
+height: 16px;
+background-color: #f4f6f9;
+background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' fill='%234a72a5'><polygon points='50,80 10,20 90,20'/></svg>");
+background-size: 9px;
+background-position: center;
+background-repeat: no-repeat;
+border-left: 1px solid #e2e8f0;
+}
+
+.edit-area::-webkit-scrollbar-button:single-button:vertical:increment:hover,
+.preview-area::-webkit-scrollbar-button:single-button:vertical:increment:hover {
+background-color: #e2e8f0;
+}
+
+@media (max-width: 900px) {
+.container {
+flex-direction: column;
+}
+
+.edit-area,
+.preview-area {
+max-height: none;
+overflow: visible;
+}
+
+.top-inputs {
+grid-template-columns: 1fr;
+}
+}
+
+/* =========================
+深色工作区主题
+仅改变操作界面，导出纸张保持白色
+========================= */
+:root {
+--workspace-bg: #1b2030;
+--workspace-panel: #242a3a;
+--workspace-card: #2c3346;
+--workspace-card-2: #31394e;
+--workspace-border: #46506a;
+--workspace-text: #edf2f8;
+--workspace-muted: #aeb8c8;
+--workspace-input: #202638;
+--workspace-hover: #38425a;
+}
+
+html {
+background: var(--workspace-bg);
+}
+
+body {
+background: var(--workspace-bg) !important;
+color: var(--workspace-text);
+}
+
+/* 左侧编辑区 */
+.edit-area {
+background: var(--workspace-panel) !important;
+box-shadow: 0 6px 22px rgba(0,0,0,0.28) !important;
+color: var(--workspace-text);
+}
+
+.edit-area > h2 {
+color: #f4f7fb !important;
+}
+
+.data-panel {
+background: var(--workspace-card) !important;
+border-color: var(--workspace-border) !important;
+}
+
+.data-panel-title {
+color: var(--workspace-text) !important;
+}
+
+.task-card {
+background: var(--workspace-card) !important;
+border-color: var(--workspace-border) !important;
+}
+
+.type-row {
+background: var(--workspace-card-2) !important;
+border-color: var(--workspace-border) !important;
+}
+
+.day-group {
+color: #dce8ff !important;
+}
+
+.edit-area label,
+.edit-area .type-row label {
+color: var(--workspace-text) !important;
+}
+
+/* 覆盖底部“温馨提示”内联浅色文字 */
+.edit-area label[style] {
+color: var(--workspace-text) !important;
+}
+
+/* 输入框 / 文本框 */
+.edit-area input:not([type="checkbox"]):not([type="file"]),
+.edit-area textarea,
+.edit-area select,
+.input-item,
+.day-group input,
+.type-row textarea {
+background: var(--workspace-input) !important;
+color: #f7f9fc !important;
+border-color: var(--workspace-border) !important;
+}
+
+.edit-area input::placeholder,
+.edit-area textarea::placeholder {
+color: #8692a6 !important;
+}
+
+.edit-area input:focus,
+.edit-area textarea:focus,
+.edit-area select:focus,
+.input-item:focus,
+.day-group input:focus,
+.type-row textarea:focus {
+border-color: #58a6ff !important;
+box-shadow: 0 0 0 2px rgba(88,166,255,0.12) !important;
+}
+
+.edit-area input[type="checkbox"] {
+accent-color: var(--accent-color);
+}
+
+/* 数据按钮 */
+.btn-export-json {
+background: #30384b !important;
+border-color: #6d8fc1 !important;
+color: #eaf2ff !important;
+}
+
+.btn-export-json:hover {
+background: var(--workspace-hover) !important;
+}
+
+.btn-import-json {
+background: #0d4b80 !important;
+color: #fff !important;
+}
+
+.btn-import-json:hover {
+background: #12619f !important;
+}
+
+/* 新增任务阶段按钮 */
+.btn-add {
+background: #20283a !important;
+border-color: #4f9cff !important;
+color: #75b4ff !important;
+}
+
+.btn-add:hover {
+background: #293651 !important;
+}
+
+#autoSaveTip {
+color: #67d78a !important;
+}
+
+/* 右侧仅工作区变深色 */
+.preview-area {
+background: var(--workspace-bg) !important;
+}
+
+/* 真正导出的纸张必须保持浅色 */
+#guidePaper,
+.guide-paper {
+background: #ffffff !important;
+color: #333333 !important;
+color-scheme: light;
+box-shadow: 0 12px 32px rgba(0,0,0,0.32) !important;
+}
+
+/* 防止深色工作区的文字规则影响预览纸张 */
+#guidePaper .p-row b {
+color: #222222 !important;
+}
+
+#guidePaper .p-row p {
+color: #444444 !important;
+}
+
+#guidePaper .p-tip-box,
+#guidePaper .p-tip-box * {
+color: #333333;
+}
+
+/* 深色滚动条 */
+.edit-area::-webkit-scrollbar-track,
+.preview-area::-webkit-scrollbar-track {
+background-color: #1b2030 !important;
+border-left-color: #343d52 !important;
+}
+
+.edit-area::-webkit-scrollbar-thumb,
+.preview-area::-webkit-scrollbar-thumb {
+background-color: #5876a5 !important;
+border-color: #1b2030 !important;
+}
+
+.edit-area::-webkit-scrollbar-thumb:hover,
+.preview-area::-webkit-scrollbar-thumb:hover {
+background-color: #6c8fc3 !important;
+}
+
+.edit-area::-webkit-scrollbar-button:single-button:vertical:decrement,
+.preview-area::-webkit-scrollbar-button:single-button:vertical:decrement,
+.edit-area::-webkit-scrollbar-button:single-button:vertical:increment,
+.preview-area::-webkit-scrollbar-button:single-button:vertical:increment {
+background-color: #242a3a !important;
+border-left-color: #343d52 !important;
+}
+
+/* 日期选择器也跟随深色工作区 */
+.flatpickr-calendar {
+background: #252c3c !important;
+border-color: #46506a !important;
+box-shadow: 0 10px 28px rgba(0,0,0,0.35) !important;
+}
+
+.flatpickr-months .flatpickr-month,
+.flatpickr-current-month .flatpickr-monthDropdown-months,
+.flatpickr-current-month input.cur-year,
+span.flatpickr-weekday,
+.flatpickr-day {
+color: #edf2f8 !important;
+fill: #edf2f8 !important;
+}
+
+.flatpickr-day:hover,
+.flatpickr-day:focus {
+background: #3a455d !important;
+border-color: #3a455d !important;
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange {
+background: var(--accent-color) !important;
+border-color: var(--accent-color) !important;
+color: #fff !important;
+}
+
+.flatpickr-day.prevMonthDay,
+.flatpickr-day.nextMonthDay {
+color: #768399 !important;
+}
+
+</style>
 
 <style id="charcoal-soft-theme">
-    :root {
-        --charcoal-bg: #171717;
-        --charcoal-panel: #202020;
-        --charcoal-card: #282828;
-        --charcoal-card-2: #2e2e2e;
-        --charcoal-input: #1c1c1c;
-        --charcoal-border: #414141;
-        --soft-text: #d4d0c8;
-        --soft-text-2: #aaa59d;
-        --soft-text-3: #8f8a83;
-    }
+:root {
+--charcoal-bg: #171717;
+--charcoal-panel: #202020;
+--charcoal-card: #282828;
+--charcoal-card-2: #2e2e2e;
+--charcoal-input: #1c1c1c;
+--charcoal-border: #414141;
+--soft-text: #d4d0c8;
+--soft-text-2: #aaa59d;
+--soft-text-3: #8f8a83;
+}
 
-    html, body {
-        background: var(--charcoal-bg) !important;
-    }
+html, body {
+background: var(--charcoal-bg) !important;
+}
 </style>
 
 <style id="charcoal-task-theme">
-    body {
-        color: var(--soft-text) !important;
-    }
+body {
+color: var(--soft-text) !important;
+}
 
-    .edit-area {
-        background: var(--charcoal-panel) !important;
-        color: var(--soft-text) !important;
-        box-shadow: 0 8px 26px rgba(0,0,0,.34) !important;
-    }
+.edit-area {
+background: var(--charcoal-panel) !important;
+color: var(--soft-text) !important;
+box-shadow: 0 8px 26px rgba(0,0,0,.34) !important;
+}
 
-    .edit-area > h2,
-    .edit-area label,
-    .edit-area .data-panel-title,
-    .edit-area .day-group,
-    .edit-area .type-row label {
-        color: var(--soft-text) !important;
-    }
+.edit-area > h2,
+.edit-area label,
+.edit-area .data-panel-title,
+.edit-area .day-group,
+.edit-area .type-row label {
+color: var(--soft-text) !important;
+}
 
-    .data-panel,
-    .task-card {
-        background: var(--charcoal-card) !important;
-        border-color: var(--charcoal-border) !important;
-    }
+.data-panel,
+.task-card {
+background: var(--charcoal-card) !important;
+border-color: var(--charcoal-border) !important;
+}
 
-    .type-row {
-        background: var(--charcoal-card-2) !important;
-        border-color: var(--charcoal-border) !important;
-    }
+.type-row {
+background: var(--charcoal-card-2) !important;
+border-color: var(--charcoal-border) !important;
+}
 
-    .edit-area input:not([type="checkbox"]):not([type="file"]),
-    .edit-area textarea,
-    .edit-area select,
-    .input-item,
-    .day-group input,
-    .type-row textarea {
-        background: var(--charcoal-input) !important;
-        color: var(--soft-text) !important;
-        border-color: var(--charcoal-border) !important;
-    }
+.edit-area input:not([type="checkbox"]):not([type="file"]),
+.edit-area textarea,
+.edit-area select,
+.input-item,
+.day-group input,
+.type-row textarea {
+background: var(--charcoal-input) !important;
+color: var(--soft-text) !important;
+border-color: var(--charcoal-border) !important;
+}
 
-    .edit-area input::placeholder,
-    .edit-area textarea::placeholder {
-        color: var(--soft-text-3) !important;
-    }
+.edit-area input::placeholder,
+.edit-area textarea::placeholder {
+color: var(--soft-text-3) !important;
+}
 
-    .btn-export-json {
-        background: #2b2b2b !important;
-        border-color: #626262 !important;
-        color: var(--soft-text) !important;
-    }
+.btn-export-json {
+background: #2b2b2b !important;
+border-color: #626262 !important;
+color: var(--soft-text) !important;
+}
 
-    .btn-import-json {
-        background: #3a4148 !important;
-        color: var(--soft-text) !important;
-    }
+.btn-import-json {
+background: #3a4148 !important;
+color: var(--soft-text) !important;
+}
 
-    .btn-add {
-        background: #242424 !important;
-        border-color: #6e7883 !important;
-        color: #b7c0c9 !important;
-    }
+.btn-add {
+background: #242424 !important;
+border-color: #6e7883 !important;
+color: #b7c0c9 !important;
+}
 
-    .btn-add:hover,
-    .btn-export-json:hover {
-        background: #333 !important;
-    }
+.btn-add:hover,
+.btn-export-json:hover {
+background: #333 !important;
+}
 
-    .preview-area {
-        background: var(--charcoal-bg) !important;
-    }
+.preview-area {
+background: var(--charcoal-bg) !important;
+}
 
-    .edit-area::-webkit-scrollbar-track,
-    .preview-area::-webkit-scrollbar-track {
-        background-color: #171717 !important;
-        border-left-color: #303030 !important;
-    }
+.edit-area::-webkit-scrollbar-track,
+.preview-area::-webkit-scrollbar-track {
+background-color: #171717 !important;
+border-left-color: #303030 !important;
+}
 
-    .edit-area::-webkit-scrollbar-thumb,
-    .preview-area::-webkit-scrollbar-thumb {
-        background-color: #666 !important;
-        border-color: #171717 !important;
-    }
+.edit-area::-webkit-scrollbar-thumb,
+.preview-area::-webkit-scrollbar-thumb {
+background-color: #666 !important;
+border-color: #171717 !important;
+}
 
-    /* 导出纸张继续保持原来的白色，不受深色主题影响 */
-    #guidePaper, .guide-paper {
-        background: #ffffff !important;
-        color: #333333 !important;
-        color-scheme: light !important;
-    }
+/* 导出纸张继续保持原来的白色，不受深色主题影响 */
+#guidePaper, .guide-paper {
+background: #ffffff !important;
+color: #333333 !important;
+color-scheme: light !important;
+}
 </style>
 
 </head>
@@ -800,1383 +799,1837 @@
 
 <div class="container">
 
-    <div class="edit-area">
+<div class="edit-area">
 
-        <h2 style="color: var(--primary-color); margin-bottom: 20px;">
-            <i class="fas fa-magic"></i> 任务指引生成器
-        </h2>
+<h2 style="color: var(--primary-color); margin-bottom: 20px;">
+<i class="fas fa-magic"></i> 任务指引生成器
+</h2>
 
-        <div class="data-panel">
+<div class="data-panel">
 
-            <div class="data-panel-title">
-                <i class="fas fa-database"></i> 模板与数据管理
-            </div>
+<div class="data-panel-title">
+<i class="fas fa-database"></i> 模板与数据管理
+</div>
 
-            <div class="data-btns">
+<div class="data-btns">
 
-                <button
-                    class="btn-data btn-export-json"
-                    onclick="exportJSON()">
-                    <i class="fas fa-download"></i> 导出 JSON
-                </button>
+<button
+class="btn-data btn-export-json"
+onclick="exportJSON()">
+<i class="fas fa-download"></i> 导出 JSON
+</button>
 
-                <button
-                    class="btn-data btn-import-json"
-                    onclick="document.getElementById('jsonUpload').click()">
-                    <i class="fas fa-upload"></i> 导入 JSON
-                </button>
+<button
+class="btn-data btn-import-json"
+onclick="document.getElementById('jsonUpload').click()">
+<i class="fas fa-upload"></i> 导入 JSON / 历史备份
+</button>
 
-                <input
-                    type="file"
-                    id="jsonUpload"
-                    style="display:none;"
-                    accept=".json,application/json"
-                    onchange="importJSON(event)">
-            </div>
-        </div>
+<input
+type="file"
+id="jsonUpload"
+style="display:none;"
+accept=".json,.txt,application/json,text/plain"
+onchange="importJSON(event)">
+</div>
+</div>
+<div style="font-size:12px; color:var(--soft-text-2); margin:-10px 0 16px; line-height:1.5;">
+<i class="fas fa-shield-alt"></i> 支持自动识别旧版 JSON / TXT 备份，并在导入后转换为当前格式。
+</div>
 
-        <div class="top-inputs">
+<div class="top-inputs">
 
-            <input
-                type="text"
-                id="classInput"
-                class="input-item"
-                placeholder="班级（如：三(1)班）">
+<input
+type="text"
+id="classInput"
+class="input-item"
+placeholder="班级（如：三(1)班）">
 
-            <input
-                type="text"
-                id="unitInput"
-                class="input-item"
-                placeholder="单元（如：Unit 5）">
+<input
+type="text"
+id="unitInput"
+class="input-item"
+placeholder="单元（如：Unit 5）">
 
-            <input
-                type="text"
-                id="dateInput"
-                class="input-item"
-                placeholder="日期">
+<input
+type="text"
+id="dateInput"
+class="input-item"
+placeholder="日期">
 
-        </div>
+</div>
 
-        <button class="btn-add" id="addTaskBtn">
-            <i class="fas fa-plus-circle"></i> 新增 Day 任务阶段
-        </button>
+<button class="btn-add" id="addTaskBtn">
+<i class="fas fa-plus-circle"></i> 新增 Day 任务阶段
+</button>
 
-        <div id="taskContainer"></div>
+<div id="taskContainer"></div>
 
-        <div style="margin-top:20px;">
+<div style="margin-top:20px;">
 
-            <label
-                style="font-weight:bold; font-size:14px; color:#444;">
-                底部温馨提示：
-            </label>
+<label
+style="font-weight:bold; font-size:14px; color:#444;">
+底部温馨提示：
+</label>
 
-            <textarea
-                id="tipInput"
-                class="input-item"
-                style="height:80px; margin-top:8px;"
-                placeholder="在此输入给家长或学生的温馨提示..."></textarea>
+<textarea
+id="tipInput"
+class="input-item"
+style="height:80px; margin-top:8px;"
+placeholder="在此输入给家长或学生的温馨提示..."></textarea>
 
-        </div>
+</div>
 
-        <div class="final-actions">
+<div class="final-actions">
 
-            <button
-                class="btn-main btn-export-img"
-                id="downloadImgBtn">
-                <i class="fas fa-image"></i> 生成并导出指引图片
-            </button>
+<button
+class="btn-main btn-export-img"
+id="downloadImgBtn">
+<i class="fas fa-image"></i> 生成并导出指引图片
+</button>
 
-        </div>
+</div>
 
-        <div id="autoSaveTip">
-            ✅ 已自动保存至浏览器缓存
-        </div>
+<div id="autoSaveTip">
+✅ 已自动保存至浏览器缓存
+</div>
 
-    </div>
+</div>
 
-    <div class="preview-area">
+<div class="preview-area">
 
-        <div class="guide-paper" id="guidePaper">
+<div class="guide-paper" id="guidePaper">
 
-            <div class="p-header">
+<div class="p-header">
 
-                <h1 style="color:var(--primary-color); font-size:28px;">
-                    课后任务进程指引
-                </h1>
+<h1 style="color:var(--primary-color); font-size:28px;">
+课后任务进程指引
+</h1>
 
-                <div style="
-                    font-size:12px;
-                    color:#888;
-                    font-weight:bold;
-                    letter-spacing:2px;
-                    margin-top:4px;
-                ">
-                    HOMEWORK PROGRESS GUIDE
-                </div>
+<div style="
+font-size:12px;
+color:#888;
+font-weight:bold;
+letter-spacing:2px;
+margin-top:4px;
+">
+HOMEWORK PROGRESS GUIDE
+</div>
 
-                <div class="p-tags">
-                    <span class="p-tag" id="p-class">未填班级</span>
-                    <span class="p-tag" id="p-unit">未填单元</span>
-                    <span class="p-tag" id="p-date">未选日期</span>
-                </div>
+<div class="p-tags">
+<span class="p-tag" id="p-class">未填班级</span>
+<span class="p-tag" id="p-unit">未填单元</span>
+<span class="p-tag" id="p-date">未选日期</span>
+</div>
 
-            </div>
+</div>
 
-            <div id="p-list"></div>
+<div id="p-list"></div>
 
-            <div class="p-tip-box" id="p-tip-area">
+<div class="p-tip-box" id="p-tip-area">
 
-                <div style="font-weight:bold; margin-bottom:5px;">
-                    <i class="fas fa-lightbulb" style="color:#faad14;"></i>
-                    温馨提示 / Tips
-                </div>
+<div style="font-weight:bold; margin-bottom:5px;">
+<i class="fas fa-lightbulb" style="color:#faad14;"></i>
+温馨提示 / Tips
+</div>
 
-                <div id="p-tip"></div>
+<div id="p-tip"></div>
 
-            </div>
+</div>
 
-            <div class="p-footer">
-                坚持每天进步一点点，未来一定会感谢现在的努力！<br>
-                🚀 稳定进步 · 追求卓越 · 开启未来
-            </div>
+<div class="p-footer">
+坚持每天进步一点点，未来一定会感谢现在的努力！<br>
+🚀 稳定进步 · 追求卓越 · 开启未来
+</div>
 
-        </div>
+</div>
 
-    </div>
+</div>
 
 </div>
 
 <script>
 
-    const config = {
-        voice: {
-            label: '语音任务',
-            icon: 'fa-microphone'
-        },
-        write: {
-            label: '书写任务',
-            icon: 'fa-pen-nib'
-        },
-        listen: {
-            label: '磨耳朵任务',
-            icon: 'fa-headphones'
-        },
-        word: {
-            label: '单词闯关',
-            icon: 'fa-spell-check'
-        },
-        extend: {
-            label: '拓展任务',
-            icon: 'fa-star'
-        }
-    };
-
-    let autoSaveTimeout = null;
-
-
-    flatpickr("#dateInput", {
-        locale: "zh",
-        dateFormat: "Y.m.d",
-        defaultDate: new Date(),
-        onChange: triggerUpdate
-    });
-
-
-    function getCurrentData() {
-
-        const tasks = [];
-
-        document
-            .querySelectorAll('.task-card')
-            .forEach(card => {
-
-                const taskObj = {
-                    day: card.querySelector('.day-num').value,
-                    week: card.querySelector('.week-num').value,
-                    items: {}
-                };
-
-                Object.keys(config).forEach(type => {
-
-                    taskObj.items[type] = {
-                        checked: card.querySelector(`.cb-${type}`).checked,
-                        content: card.querySelector(`.ta-${type}`).value
-                    };
-
-                });
-
-                tasks.push(taskObj);
-
-            });
-
-        return {
-
-            class: document.getElementById('classInput').value,
-
-            unit: document.getElementById('unitInput').value,
-
-            date: document.getElementById('dateInput').value,
-
-            tip: document.getElementById('tipInput').value,
-
-            tasks: tasks
-        };
-    }
-
-
-    function applyDataToUI(data) {
-
-        document.getElementById('classInput').value =
-            data.class || '';
-
-        document.getElementById('unitInput').value =
-            data.unit || '';
-
-        document.getElementById('dateInput').value =
-            data.date || '';
-
-        document.getElementById('tipInput').value =
-            data.tip || '';
-
-        const fp =
-            document.getElementById('dateInput')._flatpickr;
-
-        if (fp && data.date) {
-            fp.setDate(data.date, false, "Y.m.d");
-        }
-
-        const taskContainer =
-            document.getElementById('taskContainer');
-
-        taskContainer.innerHTML = '';
-
-        if (
-            Array.isArray(data.tasks) &&
-            data.tasks.length > 0
-        ) {
-
-            data.tasks.forEach(task => {
-                createTaskCard(task);
-            });
-
-        } else {
-
-            createTaskCard();
-
-        }
-
-        triggerUpdate();
-    }
-
-
-    function triggerUpdate() {
-
-        syncPreview();
-
-        clearTimeout(autoSaveTimeout);
-
-        autoSaveTimeout = setTimeout(() => {
-
-            try {
-
-                const data = getCurrentData();
-
-                localStorage.setItem(
-                    'autosave_homework_data',
-                    JSON.stringify(data)
-                );
-
-                const tip =
-                    document.getElementById('autoSaveTip');
-
-                tip.style.opacity = '1';
-
-                setTimeout(() => {
-                    tip.style.opacity = '0';
-                }, 1500);
-
-            } catch (error) {
-
-                console.error(
-                    '自动保存失败：',
-                    error
-                );
-
-            }
-
-        }, 800);
-    }
-
-
-    window.onload = () => {
-
-        const raw =
-            localStorage.getItem(
-                'autosave_homework_data'
-            );
-
-        if (raw) {
-
-            try {
-
-                applyDataToUI(
-                    JSON.parse(raw)
-                );
-
-            } catch (error) {
-
-                console.error(
-                    '缓存读取失败：',
-                    error
-                );
-
-                createTaskCard();
-
-            }
-
-        } else {
-
-            createTaskCard();
-
-        }
-    };
-
-
-    function exportJSON() {
-
-        try {
-
-            const data =
-                getCurrentData();
-
-            const jsonStr =
-                JSON.stringify(
-                    data,
-                    null,
-                    2
-                );
-
-            const blob =
-                new Blob(
-                    [jsonStr],
-                    {
-                        type:
-                            "application/json;charset=utf-8"
-                    }
-                );
-
-            const url =
-                URL.createObjectURL(blob);
-
-            const a =
-                document.createElement('a');
-
-            const now =
-                new Date();
-
-            const timeStr =
-                `${now.getFullYear()}` +
-                `${(now.getMonth() + 1)
-                    .toString()
-                    .padStart(2, '0')}` +
-                `${now.getDate()
-                    .toString()
-                    .padStart(2, '0')}` +
-                `_` +
-                `${now.getHours()
-                    .toString()
-                    .padStart(2, '0')}` +
-                `${now.getMinutes()
-                    .toString()
-                    .padStart(2, '0')}` +
-                `${now.getSeconds()
-                    .toString()
-                    .padStart(2, '0')}`;
-
-            a.href = url;
-
-            a.download =
-                `任务配置备份_${timeStr}.json`;
-
-            a.style.display = 'none';
-
-            document.body.appendChild(a);
-
-            a.click();
-
-            document.body.removeChild(a);
-
-            setTimeout(() => {
-                URL.revokeObjectURL(url);
-            }, 1000);
-
-        } catch (error) {
-
-            console.error(
-                'JSON 导出失败：',
-                error
-            );
-
-            alert(
-                '❌ JSON 导出失败，请重试。'
-            );
-        }
-    }
-
-
-    function importJSON(event) {
-
-        const file =
-            event.target.files[0];
-
-        if (!file) {
-            return;
-        }
-
-        const reader =
-            new FileReader();
-
-        reader.onload =
-            function(e) {
-
-                try {
-
-                    const data =
-                        JSON.parse(
-                            e.target.result
-                        );
-
-                    applyDataToUI(data);
-
-                    localStorage.setItem(
-                        'autosave_homework_data',
-                        JSON.stringify(
-                            getCurrentData()
-                        )
-                    );
-
-                    const tip =
-                        document.getElementById(
-                            'autoSaveTip'
-                        );
-
-                    tip.innerText =
-                        "✅ JSON 数据导入成功并已覆盖缓存";
-
-                    tip.style.opacity =
-                        '1';
-
-                    setTimeout(() => {
-
-                        tip.style.opacity =
-                            '0';
-
-                        tip.innerText =
-                            "✅ 已自动保存至浏览器缓存";
-
-                    }, 2000);
-
-                } catch (error) {
-
-                    console.error(
-                        'JSON 导入失败：',
-                        error
-                    );
-
-                    alert(
-                        "❌ JSON 文件格式错误或已损坏！"
-                    );
-                }
-            };
-
-        reader.onerror =
-            function() {
-
-                alert(
-                    "❌ JSON 文件读取失败，请重新选择文件。"
-                );
-
-            };
-
-        reader.readAsText(file);
-
-        event.target.value = '';
-    }
-
-
-    document
-        .getElementById('downloadImgBtn')
-        .addEventListener(
-            'click',
-            exportGuideImage
-        );
-
-
-    async function exportGuideImage() {
-
-        const btn =
-            document.getElementById(
-                'downloadImgBtn'
-            );
-
-        const guidePaper =
-            document.getElementById(
-                'guidePaper'
-            );
-
-        const previewArea =
-            document.querySelector(
-                '.preview-area'
-            );
-
-        const cName =
-            document
-                .getElementById(
-                    'classInput'
-                )
-                .value
-                .trim() ||
-            '未命名班级';
-
-        const dName =
-            document
-                .getElementById(
-                    'dateInput'
-                )
-                .value
-                .trim() ||
-            '日期未知';
-
-        const rawFileName =
-            `${cName}-任务进程建议-${dName}.png`;
-
-        const safeFileName =
-            rawFileName.replace(
-                /[\\/:*?"<>|]/g,
-                '-'
-            );
-
-
-        if (
-            typeof html2canvas ===
-            'undefined'
-        ) {
-
-            alert(
-                '❌ 图片生成组件没有加载成功。\n\n' +
-                '请检查网络后刷新页面，再重新点击导出图片。'
-            );
-
-            return;
-        }
-
-
-        btn.disabled = true;
-
-        const oldButtonHTML =
-            btn.innerHTML;
-
-        btn.innerHTML =
-            '<i class="fas fa-spinner fa-spin"></i> 正在生成图片...';
-
-
-        const oldPreviewStyle = {
-            maxHeight:
-                previewArea.style.maxHeight,
-
-            overflow:
-                previewArea.style.overflow,
-
-            paddingRight:
-                previewArea.style.paddingRight
-        };
-
-
-        try {
-
-            syncPreview();
-
-
-            previewArea.style.maxHeight =
-                'none';
-
-            previewArea.style.overflow =
-                'visible';
-
-            previewArea.style.paddingRight =
-                '0';
-
-
-            await new Promise(resolve => {
-
-                requestAnimationFrame(() => {
-
-                    requestAnimationFrame(
-                        resolve
-                    );
-
-                });
-
-            });
-
-
-            if (
-                document.fonts &&
-                document.fonts.ready
-            ) {
-
-                try {
-
-                    await document.fonts.ready;
-
-                } catch (fontError) {
-
-                    console.warn(
-                        '字体等待失败：',
-                        fontError
-                    );
-                }
-            }
-
-
-            const exportWidth =
-                Math.ceil(
-                    guidePaper.scrollWidth
-                );
-
-            const exportHeight =
-                Math.ceil(
-                    guidePaper.scrollHeight
-                );
-
-
-            if (
-                exportWidth <= 0 ||
-                exportHeight <= 0
-            ) {
-
-                throw new Error(
-                    '导出区域尺寸异常'
-                );
-            }
-
-
-            let exportScale = 2;
-
-            if (exportHeight > 12000) {
-                exportScale = 1.5;
-            }
-
-            if (exportHeight > 18000) {
-                exportScale = 1;
-            }
-
-
-            const canvas =
-                await html2canvas(
-                    guidePaper,
-                    {
-
-                        scale:
-                            exportScale,
-
-                        useCORS:
-                            true,
-
-                        allowTaint:
-                            false,
-
-                        backgroundColor:
-                            '#ffffff',
-
-                        logging:
-                            false,
-
-                        scrollX:
-                            0,
-
-                        scrollY:
-                            0,
-
-                        width:
-                            exportWidth,
-
-                        height:
-                            exportHeight,
-
-                        windowWidth:
-                            Math.max(
-                                document.documentElement.clientWidth,
-                                exportWidth
-                            ),
-
-                        windowHeight:
-                            Math.max(
-                                document.documentElement.clientHeight,
-                                exportHeight
-                            ),
-
-                        onclone:
-                            function(
-                                clonedDocument
-                            ) {
-
-                                const clonedPaper =
-                                    clonedDocument
-                                        .getElementById(
-                                            'guidePaper'
-                                        );
-
-                                if (
-                                    clonedPaper
-                                ) {
-
-                                    clonedPaper.style.height =
-                                        'auto';
-
-                                    clonedPaper.style.maxHeight =
-                                        'none';
-
-                                    clonedPaper.style.overflow =
-                                        'visible';
-
-                                    clonedPaper.style.boxShadow =
-                                        'none';
-                                }
-
-                                const clonedPreview =
-                                    clonedDocument
-                                        .querySelector(
-                                            '.preview-area'
-                                        );
-
-                                if (
-                                    clonedPreview
-                                ) {
-
-                                    clonedPreview.style.height =
-                                        'auto';
-
-                                    clonedPreview.style.maxHeight =
-                                        'none';
-
-                                    clonedPreview.style.overflow =
-                                        'visible';
-
-                                    clonedPreview.style.paddingRight =
-                                        '0';
-                                }
-                            }
-                    }
-                );
-
-
-            const blob =
-                await new Promise(
-                    (
-                        resolve,
-                        reject
-                    ) => {
-
-                        canvas.toBlob(
-                            function(result) {
-
-                                if (
-                                    result
-                                ) {
-
-                                    resolve(
-                                        result
-                                    );
-
-                                } else {
-
-                                    reject(
-                                        new Error(
-                                            'Canvas 转换为 PNG 失败'
-                                        )
-                                    );
-                                }
-
-                            },
-                            'image/png',
-                            1
-                        );
-                    }
-                );
-
-
-            const url =
-                URL.createObjectURL(
-                    blob
-                );
-
-            const link =
-                document.createElement(
-                    'a'
-                );
-
-            link.href =
-                url;
-
-            link.download =
-                safeFileName;
-
-            link.style.display =
-                'none';
-
-            document.body.appendChild(
-                link
-            );
-
-            link.click();
-
-            document.body.removeChild(
-                link
-            );
-
-
-            setTimeout(
-                () => {
-
-                    URL.revokeObjectURL(
-                        url
-                    );
-
-                },
-                3000
-            );
-
-
-        } catch (error) {
-
-            console.error(
-                '图片导出失败：',
-                error
-            );
-
-            alert(
-                '❌ 图片生成失败。\n\n' +
-                '错误信息：' +
-                (
-                    error.message ||
-                    error
-                ) +
-                '\n\n' +
-                '你可以先刷新网页后再试一次。'
-            );
-
-
-        } finally {
-
-            previewArea.style.maxHeight =
-                oldPreviewStyle.maxHeight;
-
-            previewArea.style.overflow =
-                oldPreviewStyle.overflow;
-
-            previewArea.style.paddingRight =
-                oldPreviewStyle.paddingRight;
-
-
-            btn.disabled =
-                false;
-
-            btn.innerHTML =
-                oldButtonHTML;
-        }
-    }
-
-
-    function syncPreview() {
-
-        document.getElementById(
-            'p-class'
-        ).innerText =
-            document.getElementById(
-                'classInput'
-            ).value ||
-            '未填班级';
-
-
-        document.getElementById(
-            'p-unit'
-        ).innerText =
-            document.getElementById(
-                'unitInput'
-            ).value ||
-            '未填单元';
-
-
-        document.getElementById(
-            'p-date'
-        ).innerText =
-            document.getElementById(
-                'dateInput'
-            ).value ||
-            '未选日期';
-
-
-        document.getElementById(
-            'p-tip'
-        ).innerText =
-            document.getElementById(
-                'tipInput'
-            ).value ||
-            '暂无内容。';
-
-
-        const pList =
-            document.getElementById(
-                'p-list'
-            );
-
-        pList.innerHTML =
-            '';
-
-
-        document
-            .querySelectorAll(
-                '.task-card'
-            )
-            .forEach(card => {
-
-                const d =
-                    card.querySelector(
-                        '.day-num'
-                    ).value;
-
-                const w =
-                    card.querySelector(
-                        '.week-num'
-                    ).value;
-
-
-                const item =
-                    document.createElement(
-                        'div'
-                    );
-
-                item.className =
-                    'p-item';
-
-
-                const dayLabel =
-                    document.createElement(
-                        'div'
-                    );
-
-                dayLabel.className =
-                    'p-day-label';
-
-                dayLabel.textContent =
-                    `Day ${d} / 星期${w}`;
-
-                item.appendChild(
-                    dayLabel
-                );
-
-
-                let hasAny =
-                    false;
-
-
-                Object.keys(
-                    config
-                ).forEach(type => {
-
-                    const checked =
-                        card.querySelector(
-                            `.cb-${type}`
-                        ).checked;
-
-                    const text =
-                        card.querySelector(
-                            `.ta-${type}`
-                        ).value;
-
-
-                    if (
-                        checked
-                    ) {
-
-                        hasAny =
-                            true;
-
-
-                        const row =
-                            document.createElement(
-                                'div'
-                            );
-
-                        row.className =
-                            'p-row';
-
-
-                        const title =
-                            document.createElement(
-                                'b'
-                            );
-
-
-                        const icon =
-                            document.createElement(
-                                'i'
-                            );
-
-                        icon.className =
-                            `fas ${config[type].icon}`;
-
-
-                        const labelText =
-                            document.createTextNode(
-                                ` ${config[type].label}`
-                            );
-
-
-                        title.appendChild(
-                            icon
-                        );
-
-                        title.appendChild(
-                            labelText
-                        );
-
-
-                        const paragraph =
-                            document.createElement(
-                                'p'
-                            );
-
-                        paragraph.textContent =
-                            text ||
-                            '(见课本)';
-
-
-                        row.appendChild(
-                            title
-                        );
-
-                        row.appendChild(
-                            paragraph
-                        );
-
-                        item.appendChild(
-                            row
-                        );
-                    }
-                });
-
-
-                if (
-                    !hasAny
-                ) {
-
-                    const emptyText =
-                        document.createElement(
-                            'p'
-                        );
-
-                    emptyText.style.fontSize =
-                        '12px';
-
-                    emptyText.style.color =
-                        '#999';
-
-                    emptyText.style.paddingLeft =
-                        '24px';
-
-                    emptyText.textContent =
-                        '(此阶段暂未安排任务)';
-
-                    item.appendChild(
-                        emptyText
-                    );
-                }
-
-
-                pList.appendChild(
-                    item
-                );
-            });
-    }
-
-
-    function createTaskCard(
-        data = null
-    ) {
-
-        const container =
-            document.getElementById(
-                'taskContainer'
-            );
-
-        const card =
-            document.createElement(
-                'div'
-            );
-
-        card.className =
-            'task-card';
-
-
-        const dayGroup =
-            document.createElement(
-                'div'
-            );
-
-        dayGroup.className =
-            'day-group';
-
-
-        dayGroup.appendChild(
-            document.createTextNode(
-                'Day '
-            )
-        );
-
-
-        const dayInput =
-            document.createElement(
-                'input'
-            );
-
-        dayInput.type =
-            'text';
-
-        dayInput.className =
-            'day-num';
-
-        dayInput.value =
-            data
-                ? (
-                    data.day ??
-                    ''
-                )
-                : (
-                    container.children.length +
-                    1
-                );
-
-
-        dayGroup.appendChild(
-            dayInput
-        );
-
-
-        dayGroup.appendChild(
-            document.createTextNode(
-                ' / 星期 '
-            )
-        );
-
-
-        const weekInput =
-            document.createElement(
-                'input'
-            );
-
-        weekInput.type =
-            'text';
-
-        weekInput.className =
-            'week-num';
-
-        weekInput.value =
-            data
-                ? (
-                    data.week ??
-                    ''
-                )
-                : '一';
-
-
-        dayGroup.appendChild(
-            weekInput
-        );
-
-
-        card.appendChild(
-            dayGroup
-        );
-
-
-        Object.keys(
-            config
-        ).forEach(type => {
-
-            const typeRow =
-                document.createElement(
-                    'div'
-                );
-
-            typeRow.className =
-                'type-row';
-
-
-            const label =
-                document.createElement(
-                    'label'
-                );
-
-
-            const checkbox =
-                document.createElement(
-                    'input'
-                );
-
-            checkbox.type =
-                'checkbox';
-
-            checkbox.className =
-                `cb-${type}`;
-
-
-            if (
-                data &&
-                data.items &&
-                data.items[type]
-            ) {
-
-                checkbox.checked =
-                    !!data.items[type].checked;
-            }
-
-
-            label.appendChild(
-                checkbox
-            );
-
-
-            label.appendChild(
-                document.createTextNode(
-                    ` ${config[type].label}`
-                )
-            );
-
-
-            const textarea =
-                document.createElement(
-                    'textarea'
-                );
-
-            textarea.className =
-                `ta-${type}`;
-
-            textarea.placeholder =
-                '输入任务详情...';
-
-
-            if (
-                data &&
-                data.items &&
-                data.items[type]
-            ) {
-
-                textarea.value =
-                    data.items[type].content ||
-                    '';
-            }
-
-
-            typeRow.appendChild(
-                label
-            );
-
-            typeRow.appendChild(
-                textarea
-            );
-
-            card.appendChild(
-                typeRow
-            );
-        });
-
-
-        const deleteButton =
-            document.createElement(
-                'button'
-            );
-
-        deleteButton.className =
-            'btn-del';
-
-        deleteButton.innerHTML =
-            '<i class="fas fa-trash-alt"></i> 移除此天任务';
-
-        deleteButton.addEventListener(
-            'click',
-            () => {
-
-                card.remove();
-
-                triggerUpdate();
-
-            }
-        );
-
-
-        card.appendChild(
-            deleteButton
-        );
-
-
-        container.appendChild(
-            card
-        );
-
-
-        card
-            .querySelectorAll(
-                'input, textarea'
-            )
-            .forEach(el => {
-
-                el.addEventListener(
-                    'input',
-                    triggerUpdate
-                );
-
-                el.addEventListener(
-                    'change',
-                    triggerUpdate
-                );
-            });
-
-
-        triggerUpdate();
-    }
-
-
-    [
-        'classInput',
-        'unitInput',
-        'dateInput',
-        'tipInput'
-    ].forEach(id => {
-
-        document
-            .getElementById(id)
-            .addEventListener(
-                'input',
-                triggerUpdate
-            );
-
-    });
-
-
-    document
-        .getElementById(
-            'addTaskBtn'
-        )
-        .addEventListener(
-            'click',
-            () => {
-
-                createTaskCard();
-
-            }
-        );
+const config = {
+voice: {
+label: '语音任务',
+icon: 'fa-microphone'
+},
+write: {
+label: '书写任务',
+icon: 'fa-pen-nib'
+},
+listen: {
+label: '磨耳朵任务',
+icon: 'fa-headphones'
+},
+word: {
+label: '单词闯关',
+icon: 'fa-spell-check'
+},
+extend: {
+label: '拓展任务',
+icon: 'fa-star'
+}
+};
+
+let autoSaveTimeout = null;
+let isApplyingData = false;
+
+const BACKUP_SCHEMA_VERSION = 3;
+const BACKUP_APP_ID = 'homework-progress-guide';
+const PRIMARY_STORAGE_KEY = 'autosave_homework_data';
+const LEGACY_STORAGE_KEYS = [
+'autosave_homework_data',
+'autosaveHomeworkData',
+'homework_data',
+'homeworkData',
+'task_progress_data',
+'taskProgressData',
+'task_guide_data',
+'taskGuideData',
+'homework_progress_guide',
+'homeworkProgressGuide',
+'autosave_task_data',
+'autosaveData'
+];
+
+const TASK_TYPE_ALIASES = {
+voice: [
+'voice', 'audio', 'speaking', 'speak', 'pronunciation',
+'语音', '语音任务', '朗读', '朗读任务', '口语', '口语任务'
+],
+write: [
+'write', 'writing', 'handwriting', 'copy',
+'书写', '书写任务', '抄写', '抄写任务'
+],
+listen: [
+'listen', 'listening', 'ear', 'ears',
+'磨耳朵', '磨耳朵任务', '听力', '听力任务'
+],
+word: [
+'word', 'words', 'vocabulary', 'vocab', 'spelling',
+'单词', '单词任务', '单词闯关', '词汇', '词汇任务'
+],
+extend: [
+'extend', 'extension', 'extra', 'expand', 'challenge',
+'拓展', '拓展任务', '扩展', '扩展任务', '进阶', '进阶任务'
+]
+};
+
+function isPlainObject(value) {
+return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function getByPath(obj, path) {
+if (!isPlainObject(obj)) return undefined;
+const parts = path.split('.');
+let cur = obj;
+for (const part of parts) {
+if (!isPlainObject(cur) && !Array.isArray(cur)) return undefined;
+if (!(part in cur)) return undefined;
+cur = cur[part];
+}
+return cur;
+}
+
+function firstDefined(obj, paths, fallback = undefined) {
+for (const path of paths) {
+const value = getByPath(obj, path);
+if (value !== undefined && value !== null) return value;
+}
+return fallback;
+}
+
+function cleanTextValue(value) {
+if (value === undefined || value === null) return '';
+if (Array.isArray(value)) {
+return value
+.map(item => cleanTextValue(item))
+.filter(Boolean)
+.join('\n');
+}
+if (isPlainObject(value)) {
+const nested = firstDefined(value, [
+'content', 'text', 'value', 'detail', 'details', 'description', 'desc', 'note'
+]);
+if (nested !== undefined) return cleanTextValue(nested);
+return '';
+}
+return String(value);
+}
+
+function normalizeDateValue(value) {
+const raw = cleanTextValue(value).trim();
+if (!raw) return '';
+
+let match = raw.match(/^(\d{4})[.\-/年](\d{1,2})[.\-/月](\d{1,2})(?:日)?$/);
+if (match) {
+return `${match[1]}.${String(match[2]).padStart(2, '0')}.${String(match[3]).padStart(2, '0')}`;
+}
+
+match = raw.match(/^(\d{4})(\d{2})(\d{2})$/);
+if (match) {
+return `${match[1]}.${match[2]}.${match[3]}`;
+}
+
+const parsed = new Date(raw);
+if (!Number.isNaN(parsed.getTime()) && /^\d{4}/.test(raw)) {
+const y = parsed.getFullYear();
+const m = String(parsed.getMonth() + 1).padStart(2, '0');
+const d = String(parsed.getDate()).padStart(2, '0');
+return `${y}.${m}.${d}`;
+}
+
+return raw;
+}
+
+function normalizeWeekValue(value) {
+const raw = cleanTextValue(value).trim();
+if (!raw) return '一';
+
+const zh = raw.replace(/^星期|^周/, '');
+const map = {
+'1': '一', '2': '二', '3': '三', '4': '四', '5': '五', '6': '六', '7': '日', '0': '日',
+'一': '一', '二': '二', '三': '三', '四': '四', '五': '五', '六': '六', '日': '日', '天': '日',
+'mon': '一', 'monday': '一',
+'tue': '二', 'tues': '二', 'tuesday': '二',
+'wed': '三', 'wednesday': '三',
+'thu': '四', 'thur': '四', 'thurs': '四', 'thursday': '四',
+'fri': '五', 'friday': '五',
+'sat': '六', 'saturday': '六',
+'sun': '日', 'sunday': '日'
+};
+return map[zh.toLowerCase()] || zh || '一';
+}
+
+function normalizeTaskTypeName(name) {
+if (name === undefined || name === null) return '';
+const raw = String(name).trim().toLowerCase();
+for (const [type, aliases] of Object.entries(TASK_TYPE_ALIASES)) {
+if (type === raw) return type;
+if (aliases.some(alias => String(alias).toLowerCase() === raw)) return type;
+}
+return '';
+}
+
+function normalizeTaskItem(value, selectedHint = false) {
+if (value === undefined || value === null) {
+return { checked: !!selectedHint, content: '' };
+}
+
+if (typeof value === 'boolean') {
+return { checked: value || !!selectedHint, content: '' };
+}
+
+if (typeof value === 'string' || typeof value === 'number') {
+const content = String(value);
+return {
+checked: !!selectedHint || content.trim().length > 0,
+content
+};
+}
+
+if (Array.isArray(value)) {
+const content = cleanTextValue(value);
+return {
+checked: !!selectedHint || content.trim().length > 0,
+content
+};
+}
+
+if (isPlainObject(value)) {
+const content = cleanTextValue(firstDefined(value, [
+'content', 'text', 'value', 'detail', 'details', 'description', 'desc', 'note', 'task'
+], ''));
+
+const checkedValue = firstDefined(value, [
+'checked', 'enabled', 'selected', 'active', 'open', 'isChecked', 'isSelected', 'show'
+]);
+
+return {
+checked: checkedValue === undefined
+? (!!selectedHint || content.trim().length > 0)
+: (!!checkedValue || !!selectedHint),
+content
+};
+}
+
+return { checked: !!selectedHint, content: '' };
+}
+
+function objectToTaskArray(value) {
+if (Array.isArray(value)) return value;
+if (!isPlainObject(value)) return [];
+
+return Object.entries(value).map(([key, task], index) => {
+if (isPlainObject(task)) {
+const clone = { ...task };
+if (clone.day === undefined && clone.dayNum === undefined && clone.dayNumber === undefined) {
+const num = String(key).match(/\d+/);
+if (num) clone.day = num[0];
+}
+return clone;
+}
+return {
+day: String(key).match(/\d+/)?.[0] || String(index + 1),
+items: task
+};
+});
+}
+
+function normalizeTask(task, index) {
+const source = isPlainObject(task) ? task : {};
+const day = cleanTextValue(firstDefined(source, [
+'day', 'dayNum', 'dayNumber', 'day_no', 'dayNo', 'dayIndex', 'index', 'order'
+], index + 1)).trim() || String(index + 1);
+
+const week = normalizeWeekValue(firstDefined(source, [
+'week', 'weekNum', 'weekNumber', 'weekday', 'weekDay', 'dayOfWeek', 'week_text'
+], '一'));
+
+let rawItems = firstDefined(source, [
+'items', 'taskItems', 'itemMap', 'types', 'contents', 'contentMap', 'tasks'
+], {});
+
+if (Array.isArray(rawItems)) {
+const converted = {};
+rawItems.forEach(item => {
+if (!isPlainObject(item)) return;
+const type = normalizeTaskTypeName(firstDefined(item, ['type', 'key', 'name', 'id', 'label']));
+if (type) converted[type] = item;
+});
+rawItems = converted;
+}
+
+if (!isPlainObject(rawItems)) rawItems = {};
+
+const selectedRaw = firstDefined(source, [
+'selectedTypes', 'checkedTypes', 'enabledTypes', 'activeTypes', 'selected', 'checked'
+], []);
+const selectedSet = new Set(
+(Array.isArray(selectedRaw) ? selectedRaw : [])
+.map(normalizeTaskTypeName)
+.filter(Boolean)
+);
+
+const normalizedItems = {};
+for (const type of Object.keys(config)) {
+let value;
+const aliases = [type, ...(TASK_TYPE_ALIASES[type] || [])];
+
+for (const alias of aliases) {
+if (Object.prototype.hasOwnProperty.call(rawItems, alias)) {
+value = rawItems[alias];
+break;
+}
+}
+
+if (value === undefined) {
+for (const [key, candidate] of Object.entries(rawItems)) {
+if (normalizeTaskTypeName(key) === type) {
+value = candidate;
+break;
+}
+}
+}
+
+if (value === undefined) {
+const directPaths = [];
+for (const alias of aliases) {
+directPaths.push(alias);
+directPaths.push(`${alias}Content`);
+directPaths.push(`${alias}_content`);
+directPaths.push(`${alias}Text`);
+directPaths.push(`${alias}_text`);
+}
+value = firstDefined(source, directPaths);
+}
+
+normalizedItems[type] = normalizeTaskItem(value, selectedSet.has(type));
+}
+
+return { day, week, items: normalizedItems };
+}
+
+function looksLikeBackupObject(value) {
+if (Array.isArray(value)) return true;
+if (!isPlainObject(value)) return false;
+
+const keys = Object.keys(value).map(key => key.toLowerCase());
+const knownKeys = [
+'class', 'classname', 'unit', 'date', 'tip', 'tips', 'notice',
+'tasks', 'tasklist', 'days', 'stages', 'taskdata', 'homeworktasks',
+'basic', 'items', 'schemaVersion'.toLowerCase(), 'app'
+];
+
+if (keys.some(key => knownKeys.includes(key))) return true;
+
+return Object.keys(config).some(type => {
+const aliases = [type, ...(TASK_TYPE_ALIASES[type] || [])].map(v => String(v).toLowerCase());
+return keys.some(key => aliases.includes(key));
+});
+}
+
+function parseBackupText(rawText) {
+let text = String(rawText ?? '').replace(/^\uFEFF/, '').trim();
+if (!text) throw new Error('备份文件为空');
+
+if (/^```/.test(text)) {
+text = text
+.replace(/^```(?:json)?\s*/i, '')
+.replace(/\s*```$/, '')
+.trim();
+}
+
+let parsed;
+try {
+parsed = JSON.parse(text);
+} catch (error) {
+throw new Error('文件不是有效的 JSON 备份');
+}
+
+for (let i = 0; i < 2 && typeof parsed === 'string'; i++) {
+const nested = parsed.trim();
+if (!nested) break;
+try {
+parsed = JSON.parse(nested);
+} catch (_) {
+break;
+}
+}
+
+return parsed;
+}
+
+function unwrapBackupRoot(rawData, report) {
+let data = rawData;
+
+if (Array.isArray(data)) {
+report.migrated = true;
+report.notes.push('识别到旧版任务数组结构');
+return { tasks: data };
+}
+
+if (!isPlainObject(data)) {
+throw new Error('备份根节点不是对象或任务数组');
+}
+
+const wrapperKeys = [
+'data', 'payload', 'backup', 'state', 'homeworkData', 'homework_data',
+'formData', 'form_data', 'snapshot', 'content'
+];
+
+for (let depth = 0; depth < 4; depth++) {
+let unwrapped = false;
+for (const key of wrapperKeys) {
+const candidate = data[key];
+if ((isPlainObject(candidate) || Array.isArray(candidate)) && looksLikeBackupObject(candidate)) {
+report.migrated = true;
+report.notes.push(`已展开旧版包装字段：${key}`);
+data = Array.isArray(candidate) ? { tasks: candidate } : candidate;
+unwrapped = true;
+break;
+}
+}
+if (!unwrapped) break;
+}
+
+return data;
+}
+
+function migrateBackupData(rawData) {
+const report = {
+migrated: false,
+sourceVersion: null,
+notes: []
+};
+
+const root = unwrapBackupRoot(rawData, report);
+if (!looksLikeBackupObject(root)) {
+throw new Error('未识别到任务指引备份字段');
+}
+
+const versionRaw = firstDefined(root, ['schemaVersion', 'version', 'dataVersion', 'backupVersion']);
+report.sourceVersion = versionRaw ?? null;
+if (versionRaw === undefined || Number(versionRaw) !== BACKUP_SCHEMA_VERSION) {
+report.migrated = true;
+}
+
+const className = cleanTextValue(firstDefined(root, [
+'class', 'className', 'classname', 'class_name', 'clazz', 'classInput', 'basic.className', 'basic.class'
+], '')).trim();
+
+const unit = cleanTextValue(firstDefined(root, [
+'unit', 'unitName', 'unit_name', 'unitInput', 'basic.unit', 'basic.unitName'
+], '')).trim();
+
+const date = normalizeDateValue(firstDefined(root, [
+'date', 'taskDate', 'lessonDate', 'dateInput', 'basic.date', 'basic.date1'
+], ''));
+
+const tip = cleanTextValue(firstDefined(root, [
+'tip', 'tips', 'notice', 'message', 'tipInput', 'footerTip', 'warmTip', 'basic.tip'
+], ''));
+
+let rawTasks = firstDefined(root, [
+'tasks', 'taskList', 'task_list', 'days', 'stages', 'taskData', 'task_data',
+'homeworkTasks', 'homework_tasks', 'progress', 'progressList'
+]);
+
+if (rawTasks === undefined) {
+const hasDirectTaskField = Object.keys(config).some(type => {
+const aliases = [type, ...(TASK_TYPE_ALIASES[type] || [])];
+return aliases.some(alias => Object.prototype.hasOwnProperty.call(root, alias));
+});
+if (hasDirectTaskField) {
+rawTasks = [root];
+report.migrated = true;
+report.notes.push('识别到旧版单阶段任务结构');
+}
+}
+
+const taskArray = objectToTaskArray(rawTasks);
+const tasks = taskArray.map((task, index) => normalizeTask(task, index));
+
+const normalized = {
+schemaVersion: BACKUP_SCHEMA_VERSION,
+app: BACKUP_APP_ID,
+class: className,
+unit,
+date,
+tip,
+tasks
+};
+
+if (!tasks.length && !className && !unit && !date && !tip) {
+throw new Error('备份中没有可恢复的有效内容');
+}
+
+return { data: normalized, report };
+}
+
+function safeStorageSet(key, value) {
+try {
+localStorage.setItem(key, value);
+return true;
+} catch (error) {
+console.warn(`写入缓存失败：${key}`, error);
+return false;
+}
+}
+
+function saveCurrentDataToStorage(showTip = false) {
+const data = getCurrentData();
+const saved = safeStorageSet(PRIMARY_STORAGE_KEY, JSON.stringify(data));
+if (!saved) return false;
+
+if (showTip) {
+const tip = document.getElementById('autoSaveTip');
+tip.innerText = '✅ 已自动保存至浏览器缓存';
+tip.style.opacity = '1';
+setTimeout(() => {
+tip.style.opacity = '0';
+}, 1500);
+}
+return true;
+}
+
+function getStorageCandidates() {
+const candidates = [];
+const seen = new Set();
+
+const pushKey = key => {
+if (!key || seen.has(key)) return;
+seen.add(key);
+let raw = null;
+try {
+raw = localStorage.getItem(key);
+} catch (_) {}
+if (raw) candidates.push({ key, raw });
+};
+
+LEGACY_STORAGE_KEYS.forEach(pushKey);
+
+try {
+for (let i = 0; i < localStorage.length; i++) {
+const key = localStorage.key(i);
+if (!key) continue;
+if (/(homework|task|guide|progress)/i.test(key)) pushKey(key);
+}
+} catch (_) {}
+
+return candidates;
+}
+
+function restoreFromBrowserStorage() {
+const candidates = getStorageCandidates();
+for (const candidate of candidates) {
+try {
+const parsed = parseBackupText(candidate.raw);
+const migrated = migrateBackupData(parsed);
+applyDataToUI(migrated.data, { persist: false });
+
+if (candidate.key !== PRIMARY_STORAGE_KEY || migrated.report.migrated) {
+safeStorageSet(PRIMARY_STORAGE_KEY, JSON.stringify(getCurrentData()));
+}
+
+return {
+ok: true,
+key: candidate.key,
+report: migrated.report
+};
+} catch (error) {
+console.warn(`跳过无法读取的历史缓存：${candidate.key}`, error);
+}
+}
+
+return { ok: false };
+}
+
+flatpickr("#dateInput", {
+locale: "zh",
+dateFormat: "Y.m.d",
+defaultDate: new Date(),
+onChange: triggerUpdate
+});
+
+
+function getCurrentData() {
+
+const tasks = [];
+
+document
+.querySelectorAll('.task-card')
+.forEach(card => {
+
+const taskObj = {
+day: card.querySelector('.day-num').value,
+week: card.querySelector('.week-num').value,
+items: {}
+};
+
+Object.keys(config).forEach(type => {
+
+taskObj.items[type] = {
+checked: card.querySelector(`.cb-${type}`).checked,
+content: card.querySelector(`.ta-${type}`).value
+};
+
+});
+
+tasks.push(taskObj);
+
+});
+
+return {
+schemaVersion: BACKUP_SCHEMA_VERSION,
+app: BACKUP_APP_ID,
+savedAt: new Date().toISOString(),
+class: document.getElementById('classInput').value,
+unit: document.getElementById('unitInput').value,
+date: document.getElementById('dateInput').value,
+tip: document.getElementById('tipInput').value,
+tasks: tasks
+};
+}
+
+
+function applyDataToUI(rawData, options = {}) {
+const migrated = migrateBackupData(rawData);
+const data = migrated.data;
+
+isApplyingData = true;
+clearTimeout(autoSaveTimeout);
+
+try {
+document.getElementById('classInput').value = data.class || '';
+document.getElementById('unitInput').value = data.unit || '';
+document.getElementById('dateInput').value = data.date || '';
+document.getElementById('tipInput').value = data.tip || '';
+
+const fp = document.getElementById('dateInput')._flatpickr;
+if (fp) {
+if (data.date) {
+fp.setDate(data.date, false, 'Y.m.d');
+} else {
+fp.clear(false);
+}
+}
+
+const taskContainer = document.getElementById('taskContainer');
+taskContainer.innerHTML = '';
+
+if (Array.isArray(data.tasks) && data.tasks.length > 0) {
+data.tasks.forEach(task => {
+createTaskCard(task);
+});
+} else {
+createTaskCard();
+}
+} finally {
+isApplyingData = false;
+}
+
+syncPreview();
+
+if (options.persist !== false) {
+safeStorageSet(PRIMARY_STORAGE_KEY, JSON.stringify(getCurrentData()));
+}
+
+return migrated.report;
+}
+
+
+function triggerUpdate() {
+
+syncPreview();
+
+if (isApplyingData) {
+return;
+}
+
+clearTimeout(autoSaveTimeout);
+
+autoSaveTimeout = setTimeout(() => {
+try {
+saveCurrentDataToStorage(true);
+} catch (error) {
+console.error('自动保存失败：', error);
+}
+}, 800);
+}
+
+
+window.onload = () => {
+const restored = restoreFromBrowserStorage();
+
+if (!restored.ok) {
+isApplyingData = true;
+try {
+createTaskCard();
+} finally {
+isApplyingData = false;
+}
+syncPreview();
+return;
+}
+
+if (restored.report && restored.report.migrated) {
+const tip = document.getElementById('autoSaveTip');
+tip.innerText = '✅ 已自动兼容并恢复历史缓存';
+tip.style.opacity = '1';
+setTimeout(() => {
+tip.style.opacity = '0';
+tip.innerText = '✅ 已自动保存至浏览器缓存';
+}, 2500);
+}
+};
+
+
+function exportJSON() {
+
+try {
+
+const data =
+getCurrentData();
+
+const jsonStr =
+JSON.stringify(
+data,
+null,
+2
+);
+
+const blob =
+new Blob(
+[jsonStr],
+{
+type:
+"application/json;charset=utf-8"
+}
+);
+
+const url =
+URL.createObjectURL(blob);
+
+const a =
+document.createElement('a');
+
+const now =
+new Date();
+
+const timeStr =
+`${now.getFullYear()}` +
+`${(now.getMonth() + 1)
+.toString()
+.padStart(2, '0')}` +
+`${now.getDate()
+.toString()
+.padStart(2, '0')}` +
+`_` +
+`${now.getHours()
+.toString()
+.padStart(2, '0')}` +
+`${now.getMinutes()
+.toString()
+.padStart(2, '0')}` +
+`${now.getSeconds()
+.toString()
+.padStart(2, '0')}`;
+
+a.href = url;
+
+a.download =
+`任务配置备份_${timeStr}.json`;
+
+a.style.display = 'none';
+
+document.body.appendChild(a);
+
+a.click();
+
+document.body.removeChild(a);
+
+setTimeout(() => {
+URL.revokeObjectURL(url);
+}, 1000);
+
+} catch (error) {
+
+console.error(
+'JSON 导出失败：',
+error
+);
+
+alert(
+'❌ JSON 导出失败，请重试。'
+);
+}
+}
+
+
+function importJSON(event) {
+
+const file = event.target.files[0];
+if (!file) return;
+
+const reader = new FileReader();
+
+reader.onload = function(e) {
+try {
+const rawData = parseBackupText(e.target.result);
+const migration = migrateBackupData(rawData);
+const report = applyDataToUI(migration.data, { persist: true });
+
+const tip = document.getElementById('autoSaveTip');
+const oldVersion = report.sourceVersion;
+const versionInfo = oldVersion !== null && oldVersion !== undefined
+? `（旧版 v${oldVersion} → 当前 v${BACKUP_SCHEMA_VERSION}）`
+: '（已按当前格式整理）';
+
+tip.innerText = report.migrated
+? `✅ 历史备份读取成功 ${versionInfo}`
+: '✅ JSON 数据导入成功并已覆盖缓存';
+tip.style.opacity = '1';
+
+setTimeout(() => {
+tip.style.opacity = '0';
+tip.innerText = '✅ 已自动保存至浏览器缓存';
+}, 3000);
+
+} catch (error) {
+console.error('JSON 导入失败：', error);
+alert(
+'❌ 备份读取失败。\n\n' +
+'原因：' + (error.message || error) + '\n\n' +
+'新版已兼容常见历史备份结构；如果这份文件仍无法读取，请保留原备份文件，不要覆盖它。'
+);
+}
+};
+
+reader.onerror = function() {
+alert('❌ 备份文件读取失败，请重新选择文件。');
+};
+
+reader.readAsText(file, 'utf-8');
+event.target.value = '';
+}
+
+
+document
+.getElementById('downloadImgBtn')
+.addEventListener(
+'click',
+exportGuideImage
+);
+
+
+async function exportGuideImage() {
+
+const btn =
+document.getElementById(
+'downloadImgBtn'
+);
+
+const guidePaper =
+document.getElementById(
+'guidePaper'
+);
+
+const previewArea =
+document.querySelector(
+'.preview-area'
+);
+
+const cName =
+document
+.getElementById(
+'classInput'
+)
+.value
+.trim() ||
+'未命名班级';
+
+const dName =
+document
+.getElementById(
+'dateInput'
+)
+.value
+.trim() ||
+'日期未知';
+
+const rawFileName =
+`${cName}-任务进程建议-${dName}.png`;
+
+const safeFileName =
+rawFileName.replace(
+/[\\/:*?"<>|]/g,
+'-'
+);
+
+
+if (
+typeof html2canvas ===
+'undefined'
+) {
+
+alert(
+'❌ 图片生成组件没有加载成功。\n\n' +
+'请检查网络后刷新页面，再重新点击导出图片。'
+);
+
+return;
+}
+
+
+btn.disabled = true;
+
+const oldButtonHTML =
+btn.innerHTML;
+
+btn.innerHTML =
+'<i class="fas fa-spinner fa-spin"></i> 正在生成图片...';
+
+
+const oldPreviewStyle = {
+maxHeight:
+previewArea.style.maxHeight,
+
+overflow:
+previewArea.style.overflow,
+
+paddingRight:
+previewArea.style.paddingRight
+};
+
+
+try {
+
+syncPreview();
+
+
+previewArea.style.maxHeight =
+'none';
+
+previewArea.style.overflow =
+'visible';
+
+previewArea.style.paddingRight =
+'0';
+
+
+await new Promise(resolve => {
+
+requestAnimationFrame(() => {
+
+requestAnimationFrame(
+resolve
+);
+
+});
+
+});
+
+
+if (
+document.fonts &&
+document.fonts.ready
+) {
+
+try {
+
+await document.fonts.ready;
+
+} catch (fontError) {
+
+console.warn(
+'字体等待失败：',
+fontError
+);
+}
+}
+
+
+const exportWidth =
+Math.ceil(
+guidePaper.scrollWidth
+);
+
+const exportHeight =
+Math.ceil(
+guidePaper.scrollHeight
+);
+
+
+if (
+exportWidth <= 0 ||
+exportHeight <= 0
+) {
+
+throw new Error(
+'导出区域尺寸异常'
+);
+}
+
+
+let exportScale = 2;
+
+if (exportHeight > 12000) {
+exportScale = 1.5;
+}
+
+if (exportHeight > 18000) {
+exportScale = 1;
+}
+
+
+const canvas =
+await html2canvas(
+guidePaper,
+{
+
+scale:
+exportScale,
+
+useCORS:
+true,
+
+allowTaint:
+false,
+
+backgroundColor:
+'#ffffff',
+
+logging:
+false,
+
+scrollX:
+0,
+
+scrollY:
+0,
+
+width:
+exportWidth,
+
+height:
+exportHeight,
+
+windowWidth:
+Math.max(
+document.documentElement.clientWidth,
+exportWidth
+),
+
+windowHeight:
+Math.max(
+document.documentElement.clientHeight,
+exportHeight
+),
+
+onclone:
+function(
+clonedDocument
+) {
+
+const clonedPaper =
+clonedDocument
+.getElementById(
+'guidePaper'
+);
+
+if (
+clonedPaper
+) {
+
+clonedPaper.style.height =
+'auto';
+
+clonedPaper.style.maxHeight =
+'none';
+
+clonedPaper.style.overflow =
+'visible';
+
+clonedPaper.style.boxShadow =
+'none';
+}
+
+const clonedPreview =
+clonedDocument
+.querySelector(
+'.preview-area'
+);
+
+if (
+clonedPreview
+) {
+
+clonedPreview.style.height =
+'auto';
+
+clonedPreview.style.maxHeight =
+'none';
+
+clonedPreview.style.overflow =
+'visible';
+
+clonedPreview.style.paddingRight =
+'0';
+}
+}
+}
+);
+
+
+const blob =
+await new Promise(
+(
+resolve,
+reject
+) => {
+
+canvas.toBlob(
+function(result) {
+
+if (
+result
+) {
+
+resolve(
+result
+);
+
+} else {
+
+reject(
+new Error(
+'Canvas 转换为 PNG 失败'
+)
+);
+}
+
+},
+'image/png',
+1
+);
+}
+);
+
+
+const url =
+URL.createObjectURL(
+blob
+);
+
+const link =
+document.createElement(
+'a'
+);
+
+link.href =
+url;
+
+link.download =
+safeFileName;
+
+link.style.display =
+'none';
+
+document.body.appendChild(
+link
+);
+
+link.click();
+
+document.body.removeChild(
+link
+);
+
+
+setTimeout(
+() => {
+
+URL.revokeObjectURL(
+url
+);
+
+},
+3000
+);
+
+
+} catch (error) {
+
+console.error(
+'图片导出失败：',
+error
+);
+
+alert(
+'❌ 图片生成失败。\n\n' +
+'错误信息：' +
+(
+error.message ||
+error
+) +
+'\n\n' +
+'你可以先刷新网页后再试一次。'
+);
+
+
+} finally {
+
+previewArea.style.maxHeight =
+oldPreviewStyle.maxHeight;
+
+previewArea.style.overflow =
+oldPreviewStyle.overflow;
+
+previewArea.style.paddingRight =
+oldPreviewStyle.paddingRight;
+
+
+btn.disabled =
+false;
+
+btn.innerHTML =
+oldButtonHTML;
+}
+}
+
+
+function syncPreview() {
+
+document.getElementById(
+'p-class'
+).innerText =
+document.getElementById(
+'classInput'
+).value ||
+'未填班级';
+
+
+document.getElementById(
+'p-unit'
+).innerText =
+document.getElementById(
+'unitInput'
+).value ||
+'未填单元';
+
+
+document.getElementById(
+'p-date'
+).innerText =
+document.getElementById(
+'dateInput'
+).value ||
+'未选日期';
+
+
+document.getElementById(
+'p-tip'
+).innerText =
+document.getElementById(
+'tipInput'
+).value ||
+'暂无内容。';
+
+
+const pList =
+document.getElementById(
+'p-list'
+);
+
+pList.innerHTML =
+'';
+
+
+document
+.querySelectorAll(
+'.task-card'
+)
+.forEach(card => {
+
+const d =
+card.querySelector(
+'.day-num'
+).value;
+
+const w =
+card.querySelector(
+'.week-num'
+).value;
+
+
+const item =
+document.createElement(
+'div'
+);
+
+item.className =
+'p-item';
+
+
+const dayLabel =
+document.createElement(
+'div'
+);
+
+dayLabel.className =
+'p-day-label';
+
+dayLabel.textContent =
+`Day ${d} / 星期${w}`;
+
+item.appendChild(
+dayLabel
+);
+
+
+let hasAny =
+false;
+
+
+Object.keys(
+config
+).forEach(type => {
+
+const checked =
+card.querySelector(
+`.cb-${type}`
+).checked;
+
+const text =
+card.querySelector(
+`.ta-${type}`
+).value;
+
+
+if (
+checked
+) {
+
+hasAny =
+true;
+
+
+const row =
+document.createElement(
+'div'
+);
+
+row.className =
+'p-row';
+
+
+const title =
+document.createElement(
+'b'
+);
+
+
+const icon =
+document.createElement(
+'i'
+);
+
+icon.className =
+`fas ${config[type].icon}`;
+
+
+const labelText =
+document.createTextNode(
+` ${config[type].label}`
+);
+
+
+title.appendChild(
+icon
+);
+
+title.appendChild(
+labelText
+);
+
+
+const paragraph =
+document.createElement(
+'p'
+);
+
+paragraph.textContent =
+text ||
+'(见课本)';
+
+
+row.appendChild(
+title
+);
+
+row.appendChild(
+paragraph
+);
+
+item.appendChild(
+row
+);
+}
+});
+
+
+if (
+!hasAny
+) {
+
+const emptyText =
+document.createElement(
+'p'
+);
+
+emptyText.style.fontSize =
+'12px';
+
+emptyText.style.color =
+'#999';
+
+emptyText.style.paddingLeft =
+'24px';
+
+emptyText.textContent =
+'(此阶段暂未安排任务)';
+
+item.appendChild(
+emptyText
+);
+}
+
+
+pList.appendChild(
+item
+);
+});
+}
+
+
+function createTaskCard(
+data = null
+) {
+
+const container =
+document.getElementById(
+'taskContainer'
+);
+
+const card =
+document.createElement(
+'div'
+);
+
+card.className =
+'task-card';
+
+
+const dayGroup =
+document.createElement(
+'div'
+);
+
+dayGroup.className =
+'day-group';
+
+
+dayGroup.appendChild(
+document.createTextNode(
+'Day '
+)
+);
+
+
+const dayInput =
+document.createElement(
+'input'
+);
+
+dayInput.type =
+'text';
+
+dayInput.className =
+'day-num';
+
+dayInput.value =
+data
+? (
+data.day ??
+''
+)
+: (
+container.children.length +
+1
+);
+
+
+dayGroup.appendChild(
+dayInput
+);
+
+
+dayGroup.appendChild(
+document.createTextNode(
+' / 星期 '
+)
+);
+
+
+const weekInput =
+document.createElement(
+'input'
+);
+
+weekInput.type =
+'text';
+
+weekInput.className =
+'week-num';
+
+weekInput.value =
+data
+? (
+data.week ??
+''
+)
+: '一';
+
+
+dayGroup.appendChild(
+weekInput
+);
+
+
+card.appendChild(
+dayGroup
+);
+
+
+Object.keys(
+config
+).forEach(type => {
+
+const typeRow =
+document.createElement(
+'div'
+);
+
+typeRow.className =
+'type-row';
+
+
+const label =
+document.createElement(
+'label'
+);
+
+
+const checkbox =
+document.createElement(
+'input'
+);
+
+checkbox.type =
+'checkbox';
+
+checkbox.className =
+`cb-${type}`;
+
+
+if (
+data &&
+data.items &&
+data.items[type]
+) {
+
+checkbox.checked =
+!!data.items[type].checked;
+}
+
+
+label.appendChild(
+checkbox
+);
+
+
+label.appendChild(
+document.createTextNode(
+` ${config[type].label}`
+)
+);
+
+
+const textarea =
+document.createElement(
+'textarea'
+);
+
+textarea.className =
+`ta-${type}`;
+
+textarea.placeholder =
+'输入任务详情...';
+
+
+if (
+data &&
+data.items &&
+data.items[type]
+) {
+
+textarea.value =
+data.items[type].content ||
+'';
+}
+
+
+typeRow.appendChild(
+label
+);
+
+typeRow.appendChild(
+textarea
+);
+
+card.appendChild(
+typeRow
+);
+});
+
+
+const deleteButton =
+document.createElement(
+'button'
+);
+
+deleteButton.className =
+'btn-del';
+
+deleteButton.innerHTML =
+'<i class="fas fa-trash-alt"></i> 移除此天任务';
+
+deleteButton.addEventListener(
+'click',
+() => {
+
+card.remove();
+
+triggerUpdate();
+
+}
+);
+
+
+card.appendChild(
+deleteButton
+);
+
+
+container.appendChild(
+card
+);
+
+
+card
+.querySelectorAll(
+'input, textarea'
+)
+.forEach(el => {
+
+el.addEventListener(
+'input',
+triggerUpdate
+);
+
+el.addEventListener(
+'change',
+triggerUpdate
+);
+});
+
+
+triggerUpdate();
+}
+
+
+[
+'classInput',
+'unitInput',
+'dateInput',
+'tipInput'
+].forEach(id => {
+
+document
+.getElementById(id)
+.addEventListener(
+'input',
+triggerUpdate
+);
+
+});
+
+
+document
+.getElementById(
+'addTaskBtn'
+)
+.addEventListener(
+'click',
+() => {
+
+createTaskCard();
+
+}
+);
 
 </script>
 
