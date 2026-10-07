@@ -39,6 +39,7 @@
   --paper-text:#24313f;
   --paper-muted:#687482;
   --paper-line:#dce4ec;
+  --paper-width:640px;
   --shadow:0 22px 60px rgba(0,0,0,.28);
 }
 
@@ -243,12 +244,12 @@ button{user-select:none}
 
 /* ---------- 右侧纸张 ---------- */
 .guide-paper{
-  width:min(760px,100%);
+  width:min(var(--paper-width),100%);
   min-height:0;
   margin:0 auto;
   background:var(--paper);
   color:var(--paper-text);
-  padding:46px 46px 0;
+  padding:42px 38px 0;
   border-radius:6px;
   box-shadow:var(--shadow);
   overflow:hidden;
@@ -290,7 +291,7 @@ button{user-select:none}
 
 .paper-spacer{height:8px}
 .paper-footer{
-  margin:0 -46px 0;
+  margin:0 -38px 0;
   background:#0b3c6f;color:#fff;text-align:center;
   padding:18px 26px 19px;
 }
@@ -299,9 +300,9 @@ button{user-select:none}
 
 /* 导出专用克隆 */
 .export-stage{
-  position:fixed;left:-99999px;top:0;width:760px;z-index:-1000;background:#fff;
+  position:fixed;left:-99999px;top:0;width:var(--paper-width);z-index:-1000;background:#fff;
 }
-.export-stage .guide-paper{width:760px;min-height:auto;box-shadow:none;border-radius:0;margin:0}
+.export-stage .guide-paper{width:var(--paper-width);min-height:auto;box-shadow:none;border-radius:0;margin:0}
 
 /* flatpickr 深色 */
 .flatpickr-calendar{background:#232628;border:1px solid #454a4e;box-shadow:0 12px 32px rgba(0,0,0,.45)}
@@ -1143,9 +1144,9 @@ button{user-select:none}
         logging:false,
         scrollX:0,
         scrollY:0,
-        width:760,
+        width:640,
         height,
-        windowWidth:900,
+        windowWidth:760,
         windowHeight:Math.max(1000,height)
       });
 
