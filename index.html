@@ -175,9 +175,10 @@ button{user-select:none}
 }
 .stage-left{display:flex;align-items:center;gap:10px;min-width:0}
 .day-pill{font-size:10px;letter-spacing:1px;font-weight:900;color:#cbd2d8;background:#34393e;border:1px solid #464d53;border-radius:6px;padding:5px 7px}
-.stage-control{display:flex;align-items:center;gap:7px;color:#a9a59e;font-size:12px}
+.stage-control{display:flex;align-items:center;gap:7px;color:#a9a59e;font-size:12px;flex-wrap:wrap}
 .day-input{width:54px;height:31px;text-align:center;padding:0 6px;font-weight:800}
 .week-select{width:78px;height:31px;padding:0 8px}
+.week-range-sep{color:#77736d;font-size:11px;font-weight:800;white-space:nowrap}
 .stage-actions{display:flex;gap:5px}
 .icon-btn{
   width:32px;height:32px;border-radius:8px;border:1px solid #44494e;background:#2b2f33;color:#aba7a0;
@@ -525,6 +526,26 @@ button{user-select:none}
     return map[raw] || raw.replace(/^星期|^周/,'') || '一';
   }
 
+  const WEEK_ORDER = ['一','二','三','四','五','六','日'];
+
+  function getDaySpanCount(value) {
+    const raw = safeText(value).trim();
+    const m = raw.match(/^(\d+)\s*[-~～—–至到]\s*(\d+)$/);
+    if (!m) return 1;
+    const a = Number(m[1]);
+    const b = Number(m[2]);
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return 1;
+    return Math.max(1, Math.abs(b - a) + 1);
+  }
+
+  function inferEndWeek(dayValue, startWeek) {
+    const start = normalizeWeek(startWeek);
+    const startIndex = WEEK_ORDER.indexOf(start);
+    const span = getDaySpanCount(dayValue);
+    if (startIndex < 0 || span <= 1) return start;
+    return WEEK_ORDER[(startIndex + span - 1) % WEEK_ORDER.length];
+  }
+
   function normalizeDateForInput(value) {
     const raw = safeText(value).trim();
     if (!raw) return '';
@@ -620,9 +641,24 @@ button{user-select:none}
 
     const tasks = taskSource.map((task, index) => {
       const t = (task && typeof task === 'object') ? task : {};
+      const day = safeText(firstValue(t.day, t.dayNum, t.dayNumber, t.no, t.index, index + 1)) || String(index + 1);
+      const weekStart = normalizeWeek(firstValue(
+        t.weekStart, t.startWeek, t.weekFrom, t.week, t.weekday, t.dayOfWeek, t.weekDay,
+        Array.isArray(t.weeks) ? t.weeks[0] : undefined,
+        '一'
+      ));
+      const rawWeekEnd = firstValue(
+        t.weekEnd, t.endWeek, t.weekTo, t.week2, t.secondWeek, t.weekdayEnd, t.endWeekday,
+        Array.isArray(t.weeks) ? t.weeks[1] : undefined
+      );
+      const weekEnd = safeText(rawWeekEnd).trim()
+        ? normalizeWeek(rawWeekEnd)
+        : inferEndWeek(day, weekStart);
       const normalized = {
-        day: safeText(firstValue(t.day, t.dayNum, t.dayNumber, t.no, t.index, index + 1)) || String(index + 1),
-        week: normalizeWeek(firstValue(t.week, t.weekday, t.dayOfWeek, t.weekDay, '一')),
+        day,
+        week: weekStart,
+        weekStart,
+        weekEnd,
         items: {}
       };
       Object.keys(TASK_CONFIG).forEach(type => normalized.items[type] = extractItem(t, type));
@@ -649,9 +685,13 @@ button{user-select:none}
           content: card.querySelector(`.ta-${type}`).value
         };
       });
+      const weekStart = card.querySelector('.week-start-select').value;
+      const weekEnd = card.querySelector('.week-end-select').value;
       return {
         day: card.querySelector('.day-input').value.trim(),
-        week: card.querySelector('.week-select').value,
+        week: weekStart,
+        weekStart,
+        weekEnd,
         items
       };
     });
@@ -684,9 +724,9 @@ button{user-select:none}
     }, 450);
   }
 
-  function makeWeekSelect(value='一') {
+  function makeWeekSelect(value='一', extraClass='') {
     const select = document.createElement('select');
-    select.className = 'week-select';
+    select.className = `week-select ${extraClass}`.trim();
     ['一','二','三','四','五','六','日'].forEach(w => {
       const opt = document.createElement('option');
       opt.value = w;
@@ -725,8 +765,19 @@ button{user-select:none}
     dayInput.inputMode = 'numeric';
     control.append(dayInput, ' / ');
 
-    const weekSelect = makeWeekSelect(task.week || '一');
-    control.appendChild(weekSelect);
+    const weekStartValue = firstValue(task.weekStart, task.week, '一');
+    const hasExplicitWeekEnd = safeText(firstValue(task.weekEnd, task.endWeek, task.weekTo, '')).trim() !== '';
+    const weekEndValue = hasExplicitWeekEnd
+      ? firstValue(task.weekEnd, task.endWeek, task.weekTo)
+      : inferEndWeek(dayInput.value, weekStartValue);
+
+    const weekStartSelect = makeWeekSelect(weekStartValue, 'week-start-select');
+    const weekSep = document.createElement('span');
+    weekSep.className = 'week-range-sep';
+    weekSep.textContent = '至';
+    const weekEndSelect = makeWeekSelect(weekEndValue, 'week-end-select');
+    if (hasExplicitWeekEnd) weekEndSelect.dataset.manual = '1';
+    control.append(weekStartSelect, weekSep, weekEndSelect);
 
     left.append(dayPill, control);
 
@@ -796,8 +847,22 @@ button{user-select:none}
       body.appendChild(module);
     });
 
-    dayInput.addEventListener('input', scheduleSave);
-    weekSelect.addEventListener('change', scheduleSave);
+    dayInput.addEventListener('input', () => {
+      if (weekEndSelect.dataset.manual !== '1') {
+        weekEndSelect.value = inferEndWeek(dayInput.value, weekStartSelect.value);
+      }
+      scheduleSave();
+    });
+    weekStartSelect.addEventListener('change', () => {
+      if (weekEndSelect.dataset.manual !== '1') {
+        weekEndSelect.value = inferEndWeek(dayInput.value, weekStartSelect.value);
+      }
+      scheduleSave();
+    });
+    weekEndSelect.addEventListener('change', () => {
+      weekEndSelect.dataset.manual = '1';
+      scheduleSave();
+    });
     collapseBtn.addEventListener('click', () => card.classList.toggle('collapsed'));
     deleteBtn.addEventListener('click', () => {
       card.remove();
@@ -847,14 +912,15 @@ button{user-select:none}
 
     cards.forEach((card, index) => {
       const day = card.querySelector('.day-input').value.trim() || String(index+1);
-      const week = card.querySelector('.week-select').value || '一';
+      const weekStart = card.querySelector('.week-start-select').value || '一';
+      const weekEnd = card.querySelector('.week-end-select').value || weekStart;
 
       const stage = document.createElement('section');
       stage.className = 'p-stage';
 
       const mark = document.createElement('div');
       mark.className = 'p-stage-mark';
-      mark.innerHTML = `<div class="p-day-num">DAY</div><div class="p-day-circle">${escapeHtml(day)}</div><div class="p-week">星期${escapeHtml(week)}</div>`;
+      mark.innerHTML = `<div class="p-day-num">DAY</div><div class="p-day-circle">${escapeHtml(day)}</div><div class="p-week">星期${escapeHtml(weekStart)}–星期${escapeHtml(weekEnd)}</div>`;
 
       const content = document.createElement('div');
       content.className = 'p-stage-content';
@@ -1073,7 +1139,7 @@ button{user-select:none}
     restoring = true;
     els.dateInput.value = formatToday();
     createTaskCard({
-      day:'1',week:'一',items:{
+      day:'1',week:'一',weekStart:'一',weekEnd:'一',items:{
         voice:{checked:false,content:''},
         write:{checked:false,content:''},
         listen:{checked:false,content:''},
@@ -1107,7 +1173,7 @@ button{user-select:none}
   });
 
   els.addTaskBtn.addEventListener('click',() => {
-    createTaskCard({day:String(els.taskContainer.children.length+1),week:'一',items:{}},{collapsed:false});
+    createTaskCard({day:String(els.taskContainer.children.length+1),week:'一',weekStart:'一',weekEnd:'一',items:{}},{collapsed:false});
     scheduleSave();
     const last = els.taskContainer.lastElementChild;
     if (last) last.scrollIntoView({behavior:'smooth',block:'nearest'});
