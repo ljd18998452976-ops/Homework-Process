@@ -178,6 +178,10 @@ button{user-select:none}
 .stage-control{display:flex;align-items:center;gap:7px;color:#a9a59e;font-size:12px;flex-wrap:wrap}
 .day-input{width:54px;height:31px;text-align:center;padding:0 6px;font-weight:800}
 .week-select{width:78px;height:31px;padding:0 8px}
+.week-end-toggle{display:inline-flex;align-items:center;gap:5px;color:#918d86;font-size:10.5px;font-weight:800;white-space:nowrap;cursor:pointer;user-select:none}
+.week-end-toggle input{width:14px;height:14px;margin:0;accent-color:#4e789b;cursor:pointer}
+.week-end-controls{display:inline-flex;align-items:center;gap:7px}
+.week-end-controls[hidden]{display:none!important}
 .week-range-sep{color:#77736d;font-size:11px;font-weight:800;white-space:nowrap}
 .stage-actions{display:flex;gap:5px}
 .icon-btn{
@@ -526,6 +530,16 @@ button{user-select:none}
     return map[raw] || raw.replace(/^星期|^周/,'') || '一';
   }
 
+  function normalizeBoolean(value, fallback=false) {
+    if (value === undefined || value === null || value === '') return fallback;
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value !== 0;
+    const raw = String(value).trim().toLowerCase();
+    if (['true','1','yes','y','on','是','开启','启用'].includes(raw)) return true;
+    if (['false','0','no','n','off','否','关闭','禁用'].includes(raw)) return false;
+    return fallback;
+  }
+
   const WEEK_ORDER = ['一','二','三','四','五','六','日'];
 
   function getDaySpanCount(value) {
@@ -654,11 +668,18 @@ button{user-select:none}
       const weekEnd = safeText(rawWeekEnd).trim()
         ? normalizeWeek(rawWeekEnd)
         : inferEndWeek(day, weekStart);
+      const rawUseWeekEnd = firstValue(
+        t.useWeekEnd, t.showWeekEnd, t.hasWeekEnd, t.weekRangeEnabled, t.useEndWeek,
+        t.enableWeekEnd, t.secondWeekEnabled, undefined
+      );
+      const inferredUseWeekEnd = safeText(rawWeekEnd).trim() !== '' && weekEnd !== weekStart;
+      const useWeekEnd = normalizeBoolean(rawUseWeekEnd, inferredUseWeekEnd);
       const normalized = {
         day,
         week: weekStart,
         weekStart,
         weekEnd,
+        useWeekEnd,
         items: {}
       };
       Object.keys(TASK_CONFIG).forEach(type => normalized.items[type] = extractItem(t, type));
@@ -666,7 +687,7 @@ button{user-select:none}
     });
 
     return {
-      version: 3,
+      version: 4,
       format: 'task-progress-guide',
       class: safeText(firstValue(root.class, root.className, root.grade, root.group, basic.class, basic.className)),
       unit: safeText(firstValue(root.unit, root.unitName, root.topic, root.lesson, basic.unit, basic.topic)),
@@ -687,17 +708,19 @@ button{user-select:none}
       });
       const weekStart = card.querySelector('.week-start-select').value;
       const weekEnd = card.querySelector('.week-end-select').value;
+      const useWeekEnd = card.querySelector('.use-week-end-check').checked;
       return {
         day: card.querySelector('.day-input').value.trim(),
         week: weekStart,
         weekStart,
         weekEnd,
+        useWeekEnd,
         items
       };
     });
 
     return {
-      version: 3,
+      version: 4,
       format: 'task-progress-guide',
       savedAt: new Date().toISOString(),
       class: els.classInput.value,
@@ -770,14 +793,35 @@ button{user-select:none}
     const weekEndValue = hasExplicitWeekEnd
       ? firstValue(task.weekEnd, task.endWeek, task.weekTo)
       : inferEndWeek(dayInput.value, weekStartValue);
+    const useWeekEndValue = normalizeBoolean(
+      firstValue(task.useWeekEnd, task.showWeekEnd, task.hasWeekEnd, ''),
+      hasExplicitWeekEnd && normalizeWeek(weekEndValue) !== normalizeWeek(weekStartValue)
+    );
 
     const weekStartSelect = makeWeekSelect(weekStartValue, 'week-start-select');
+
+    const weekEndToggle = document.createElement('label');
+    weekEndToggle.className = 'week-end-toggle';
+    weekEndToggle.title = '勾选后显示结束星期';
+    const weekEndCheck = document.createElement('input');
+    weekEndCheck.type = 'checkbox';
+    weekEndCheck.className = 'use-week-end-check';
+    weekEndCheck.checked = useWeekEndValue;
+    const weekEndToggleText = document.createElement('span');
+    weekEndToggleText.textContent = '结束星期';
+    weekEndToggle.append(weekEndCheck, weekEndToggleText);
+
+    const weekEndControls = document.createElement('span');
+    weekEndControls.className = 'week-end-controls';
     const weekSep = document.createElement('span');
     weekSep.className = 'week-range-sep';
     weekSep.textContent = '至';
     const weekEndSelect = makeWeekSelect(weekEndValue, 'week-end-select');
-    if (hasExplicitWeekEnd) weekEndSelect.dataset.manual = '1';
-    control.append(weekStartSelect, weekSep, weekEndSelect);
+    if (hasExplicitWeekEnd && useWeekEndValue) weekEndSelect.dataset.manual = '1';
+    weekEndControls.append(weekSep, weekEndSelect);
+    weekEndControls.hidden = !weekEndCheck.checked;
+
+    control.append(weekStartSelect, weekEndToggle, weekEndControls);
 
     left.append(dayPill, control);
 
@@ -859,6 +903,13 @@ button{user-select:none}
       }
       scheduleSave();
     });
+    weekEndCheck.addEventListener('change', () => {
+      weekEndControls.hidden = !weekEndCheck.checked;
+      if (weekEndCheck.checked && weekEndSelect.dataset.manual !== '1') {
+        weekEndSelect.value = inferEndWeek(dayInput.value, weekStartSelect.value);
+      }
+      scheduleSave();
+    });
     weekEndSelect.addEventListener('change', () => {
       weekEndSelect.dataset.manual = '1';
       scheduleSave();
@@ -914,13 +965,17 @@ button{user-select:none}
       const day = card.querySelector('.day-input').value.trim() || String(index+1);
       const weekStart = card.querySelector('.week-start-select').value || '一';
       const weekEnd = card.querySelector('.week-end-select').value || weekStart;
+      const useWeekEnd = card.querySelector('.use-week-end-check').checked;
+      const weekLabel = useWeekEnd
+        ? `星期${weekStart}–星期${weekEnd}`
+        : `星期${weekStart}`;
 
       const stage = document.createElement('section');
       stage.className = 'p-stage';
 
       const mark = document.createElement('div');
       mark.className = 'p-stage-mark';
-      mark.innerHTML = `<div class="p-day-num">DAY</div><div class="p-day-circle">${escapeHtml(day)}</div><div class="p-week">星期${escapeHtml(weekStart)}–星期${escapeHtml(weekEnd)}</div>`;
+      mark.innerHTML = `<div class="p-day-num">DAY</div><div class="p-day-circle">${escapeHtml(day)}</div><div class="p-week">${escapeHtml(weekLabel)}</div>`;
 
       const content = document.createElement('div');
       content.className = 'p-stage-content';
@@ -1139,7 +1194,7 @@ button{user-select:none}
     restoring = true;
     els.dateInput.value = formatToday();
     createTaskCard({
-      day:'1',week:'一',weekStart:'一',weekEnd:'一',items:{
+      day:'1',week:'一',weekStart:'一',weekEnd:'一',useWeekEnd:false,items:{
         voice:{checked:false,content:''},
         write:{checked:false,content:''},
         listen:{checked:false,content:''},
@@ -1173,7 +1228,7 @@ button{user-select:none}
   });
 
   els.addTaskBtn.addEventListener('click',() => {
-    createTaskCard({day:String(els.taskContainer.children.length+1),week:'一',weekStart:'一',weekEnd:'一',items:{}},{collapsed:false});
+    createTaskCard({day:String(els.taskContainer.children.length+1),week:'一',weekStart:'一',weekEnd:'一',useWeekEnd:false,items:{}},{collapsed:false});
     scheduleSave();
     const last = els.taskContainer.lastElementChild;
     if (last) last.scrollIntoView({behavior:'smooth',block:'nearest'});
