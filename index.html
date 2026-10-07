@@ -4,2634 +4,1125 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>任务进程生成器</title>
+<title>任务进程生成器｜重新设计版</title>
 
-<!-- Font Awesome -->
-<link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- 日期选择器：加载失败时仍可直接手输日期 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/zh.js"></script>
 
-<!-- Flatpickr -->
-<link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
-<script src="https://cdn.bootcdn.net/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
-<script src="https://cdn.bootcdn.net/ajax/libs/flatpickr/4.6.13/l10n/zh.min.js"></script>
-
-<!-- html2canvas：主 CDN + 自动备用 CDN -->
-<script
-src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"
-onerror="this.onerror=null;this.src='https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js';">
-</script>
+<!-- 图片导出：主 CDN + 备用 CDN -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"
+        onerror="this.onerror=null;this.src='https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js';"></script>
 
 <style>
-:root {
---primary-color: #003366;
---accent-color: #007bff;
---success-color: #28a745;
---warning-color: #f39c12;
---danger-color: #dc3545;
---bg-body: #f4f7f9;
-}
-
-* {
-margin: 0;
-padding: 0;
-box-sizing: border-box;
-font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-}
-
-body {
-background-color: var(--bg-body);
-padding: 20px;
-color: #333;
-}
-
-.container {
-display: flex;
-width: 100%;
-max-width: 1400px;
-margin: 0 auto;
-gap: 30px;
-}
-
-/* =========================
-左侧编辑器
-========================= */
-.edit-area {
-flex: 1.2;
-background: #fff;
-padding: 25px;
-border-radius: 12px;
-box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-
-max-height: calc(100vh - 40px);
-overflow-y: auto;
-}
-
-.top-inputs {
-display: grid;
-grid-template-columns: 1fr 1fr 1fr;
-gap: 10px;
-margin-bottom: 20px;
-}
-
-.input-item {
-width: 100%;
-padding: 10px;
-border: 1px solid #ddd;
-border-radius: 6px;
-outline: none;
-transition: 0.3s;
-}
-
-.input-item:focus {
-border-color: var(--accent-color);
-box-shadow: 0 0 5px rgba(0,123,255,0.2);
-}
-
-/* =========================
-数据管理面板
-========================= */
-.data-panel {
-background: #f8f9fa;
-border: 1px solid #e9ecef;
-padding: 12px 15px;
-border-radius: 8px;
-margin-bottom: 20px;
-display: flex;
-align-items: center;
-justify-content: space-between;
-gap: 15px;
-}
-
-.data-panel-title {
-font-size: 13px;
-font-weight: bold;
-color: #495057;
-display: flex;
-align-items: center;
-gap: 6px;
-}
-
-.data-btns {
-display: flex;
-gap: 8px;
-flex-wrap: wrap;
-}
-
-.btn-data {
-padding: 6px 12px;
-border-radius: 4px;
-border: 1px solid transparent;
-cursor: pointer;
-font-size: 12px;
-font-weight: bold;
-display: flex;
-align-items: center;
-gap: 5px;
-transition: 0.2s;
-}
-
-.btn-export-json {
-background: #fff;
-border-color: var(--primary-color);
-color: var(--primary-color);
-}
-
-.btn-import-json {
-background: var(--primary-color);
-color: #fff;
-}
-
-.btn-export-json:hover {
-background: #f0f4f8;
-}
-
-.btn-import-json:hover {
-background: #002244;
-}
-
-/* =========================
-任务卡片
-========================= */
-.task-card {
-background: #fcfcfc;
-border: 1px solid #e0e0e0;
-border-radius: 10px;
-padding: 15px;
-margin-bottom: 15px;
-}
-
-.day-group {
-display: flex;
-align-items: center;
-gap: 8px;
-margin-bottom: 10px;
-font-weight: bold;
-color: var(--primary-color);
-}
-
-.day-group input {
-width: 60px;
-text-align: center;
-border: 1px solid #ccc;
-border-radius: 4px;
-padding: 4px;
-outline: none;
-}
-
-.day-group input:focus {
-border-color: var(--accent-color);
-}
-
-.type-row {
-background: #fff;
-padding: 10px;
-border-radius: 6px;
-border: 1px solid #eee;
-margin-bottom: 8px;
-}
-
-.type-row label {
-font-size: 13px;
-font-weight: bold;
-cursor: pointer;
-display: flex;
-align-items: center;
-gap: 6px;
-}
-
-.type-row textarea {
-width: 100%;
-height: 50px;
-margin-top: 5px;
-padding: 8px;
-border: 1px solid #ddd;
-border-radius: 4px;
-resize: vertical;
-font-size: 13px;
-outline: none;
-}
-
-.type-row textarea:focus {
-border-color: var(--accent-color);
-}
-
-.btn-add {
-width: 100%;
-padding: 12px;
-border: 2px dashed var(--accent-color);
-color: var(--accent-color);
-background: #fff;
-border-radius: 8px;
-cursor: pointer;
-font-weight: bold;
-margin-bottom: 20px;
-transition: 0.2s;
-}
-
-.btn-add:hover {
-background: #f0f7ff;
-}
-
-.btn-del {
-color: var(--danger-color);
-border: none;
-background: none;
-cursor: pointer;
-font-size: 12px;
-margin-top: 8px;
-}
-
-.final-actions {
-display: flex;
-gap: 15px;
-margin-top: 20px;
-}
-
-.btn-main {
-flex: 1;
-padding: 15px;
-border-radius: 10px;
-border: none;
-font-weight: bold;
-cursor: pointer;
-font-size: 16px;
-color: #fff;
-display: flex;
-align-items: center;
-justify-content: center;
-gap: 8px;
-}
-
-.btn-export-img {
-background: var(--success-color);
-transition: 0.2s;
-}
-
-.btn-export-img:hover {
-background: #218838;
-}
-
-.btn-export-img:disabled {
-opacity: 0.7;
-cursor: not-allowed;
-}
-
-#autoSaveTip {
-font-size: 12px;
-color: var(--success-color);
-text-align: center;
-margin-top: 10px;
-opacity: 0;
-transition: opacity 0.3s;
-}
-
-/* =========================
-右侧预览区
-========================= */
-.preview-area {
-flex: 1;
-max-height: calc(100vh - 40px);
-overflow-y: auto;
-padding-right: 8px;
-}
-
-.guide-paper {
-background: #fff;
-padding: 40px;
-border-radius: 4px;
-box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-width: 100%;
-}
-
-.p-header {
-text-align: center;
-border-bottom: 2px solid var(--primary-color);
-padding-bottom: 15px;
-margin-bottom: 25px;
-}
-
-.p-tags {
-display: flex;
-justify-content: center;
-gap: 10px;
-margin-top: 10px;
-flex-wrap: wrap;
-}
-
-.p-tag {
-background: #f0f4f8;
-padding: 4px 12px;
-border-radius: 20px;
-font-size: 13px;
-color: var(--primary-color);
-font-weight: bold;
-}
-
-.p-item {
-border-left: 4px solid var(--accent-color);
-padding-left: 15px;
-margin-bottom: 25px;
-}
-
-.p-day-label {
-background: var(--accent-color);
-color: #fff;
-padding: 2px 12px;
-border-radius: 4px;
-font-size: 14px;
-font-weight: bold;
-display: inline-block;
-margin-bottom: 10px;
-}
-
-.p-row {
-margin-bottom: 8px;
-}
-
-.p-row b {
-font-size: 14px;
-display: flex;
-align-items: center;
-gap: 6px;
-}
-
-.p-row p {
-font-size: 14px;
-padding-left: 24px;
-color: #444;
-white-space: pre-wrap;
-margin-top: 4px;
-overflow-wrap: anywhere;
-}
-
-.p-tip-box {
-background: #fff9db;
-border: 1px solid #ffe58f;
-padding: 15px;
-border-radius: 6px;
-font-size: 14px;
-margin-top: 30px;
-}
-
-.p-footer {
-background: var(--primary-color);
-color: #fff;
-text-align: center;
-padding: 20px;
-margin-top: 40px;
-font-size: 12px;
-border-radius: 4px;
-line-height: 1.6;
-}
-
-/* =========================
-自定义滚动条
-========================= */
-.edit-area::-webkit-scrollbar,
-.preview-area::-webkit-scrollbar {
-width: 14px;
-}
-
-.edit-area::-webkit-scrollbar-track,
-.preview-area::-webkit-scrollbar-track {
-background-color: #f4f6f9;
-border-left: 1px solid #e2e8f0;
-}
-
-.edit-area::-webkit-scrollbar-thumb,
-.preview-area::-webkit-scrollbar-thumb {
-background-color: #4a72a5;
-border-radius: 2px;
-border: 2px solid #f4f6f9;
-}
-
-.edit-area::-webkit-scrollbar-thumb:hover,
-.preview-area::-webkit-scrollbar-thumb:hover {
-background-color: #3b5c87;
-}
-
-.edit-area::-webkit-scrollbar-button:single-button:vertical:decrement,
-.preview-area::-webkit-scrollbar-button:single-button:vertical:decrement {
-height: 16px;
-background-color: #f4f6f9;
-background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' fill='%234a72a5'><polygon points='50,20 10,80 90,80'/></svg>");
-background-size: 9px;
-background-position: center;
-background-repeat: no-repeat;
-border-left: 1px solid #e2e8f0;
-}
-
-.edit-area::-webkit-scrollbar-button:single-button:vertical:decrement:hover,
-.preview-area::-webkit-scrollbar-button:single-button:vertical:decrement:hover {
-background-color: #e2e8f0;
-}
-
-.edit-area::-webkit-scrollbar-button:single-button:vertical:increment,
-.preview-area::-webkit-scrollbar-button:single-button:vertical:increment {
-height: 16px;
-background-color: #f4f6f9;
-background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' fill='%234a72a5'><polygon points='50,80 10,20 90,20'/></svg>");
-background-size: 9px;
-background-position: center;
-background-repeat: no-repeat;
-border-left: 1px solid #e2e8f0;
-}
-
-.edit-area::-webkit-scrollbar-button:single-button:vertical:increment:hover,
-.preview-area::-webkit-scrollbar-button:single-button:vertical:increment:hover {
-background-color: #e2e8f0;
-}
-
-@media (max-width: 900px) {
-.container {
-flex-direction: column;
-}
-
-.edit-area,
-.preview-area {
-max-height: none;
-overflow: visible;
-}
-
-.top-inputs {
-grid-template-columns: 1fr;
-}
-}
-
-/* =========================
-深色工作区主题
-仅改变操作界面，导出纸张保持白色
-========================= */
-:root {
---workspace-bg: #1b2030;
---workspace-panel: #242a3a;
---workspace-card: #2c3346;
---workspace-card-2: #31394e;
---workspace-border: #46506a;
---workspace-text: #edf2f8;
---workspace-muted: #aeb8c8;
---workspace-input: #202638;
---workspace-hover: #38425a;
-}
-
-html {
-background: var(--workspace-bg);
-}
-
-body {
-background: var(--workspace-bg) !important;
-color: var(--workspace-text);
-}
-
-/* 左侧编辑区 */
-.edit-area {
-background: var(--workspace-panel) !important;
-box-shadow: 0 6px 22px rgba(0,0,0,0.28) !important;
-color: var(--workspace-text);
-}
-
-.edit-area > h2 {
-color: #f4f7fb !important;
-}
-
-.data-panel {
-background: var(--workspace-card) !important;
-border-color: var(--workspace-border) !important;
-}
-
-.data-panel-title {
-color: var(--workspace-text) !important;
-}
-
-.task-card {
-background: var(--workspace-card) !important;
-border-color: var(--workspace-border) !important;
-}
-
-.type-row {
-background: var(--workspace-card-2) !important;
-border-color: var(--workspace-border) !important;
-}
-
-.day-group {
-color: #dce8ff !important;
-}
-
-.edit-area label,
-.edit-area .type-row label {
-color: var(--workspace-text) !important;
-}
-
-/* 覆盖底部“温馨提示”内联浅色文字 */
-.edit-area label[style] {
-color: var(--workspace-text) !important;
-}
-
-/* 输入框 / 文本框 */
-.edit-area input:not([type="checkbox"]):not([type="file"]),
-.edit-area textarea,
-.edit-area select,
-.input-item,
-.day-group input,
-.type-row textarea {
-background: var(--workspace-input) !important;
-color: #f7f9fc !important;
-border-color: var(--workspace-border) !important;
-}
-
-.edit-area input::placeholder,
-.edit-area textarea::placeholder {
-color: #8692a6 !important;
-}
-
-.edit-area input:focus,
-.edit-area textarea:focus,
-.edit-area select:focus,
-.input-item:focus,
-.day-group input:focus,
-.type-row textarea:focus {
-border-color: #58a6ff !important;
-box-shadow: 0 0 0 2px rgba(88,166,255,0.12) !important;
-}
-
-.edit-area input[type="checkbox"] {
-accent-color: var(--accent-color);
-}
-
-/* 数据按钮 */
-.btn-export-json {
-background: #30384b !important;
-border-color: #6d8fc1 !important;
-color: #eaf2ff !important;
-}
-
-.btn-export-json:hover {
-background: var(--workspace-hover) !important;
-}
-
-.btn-import-json {
-background: #0d4b80 !important;
-color: #fff !important;
-}
-
-.btn-import-json:hover {
-background: #12619f !important;
-}
-
-/* 新增任务阶段按钮 */
-.btn-add {
-background: #20283a !important;
-border-color: #4f9cff !important;
-color: #75b4ff !important;
-}
-
-.btn-add:hover {
-background: #293651 !important;
-}
-
-#autoSaveTip {
-color: #67d78a !important;
-}
-
-/* 右侧仅工作区变深色 */
-.preview-area {
-background: var(--workspace-bg) !important;
-}
-
-/* 真正导出的纸张必须保持浅色 */
-#guidePaper,
-.guide-paper {
-background: #ffffff !important;
-color: #333333 !important;
-color-scheme: light;
-box-shadow: 0 12px 32px rgba(0,0,0,0.32) !important;
-}
-
-/* 防止深色工作区的文字规则影响预览纸张 */
-#guidePaper .p-row b {
-color: #222222 !important;
-}
-
-#guidePaper .p-row p {
-color: #444444 !important;
-}
-
-#guidePaper .p-tip-box,
-#guidePaper .p-tip-box * {
-color: #333333;
-}
-
-/* 深色滚动条 */
-.edit-area::-webkit-scrollbar-track,
-.preview-area::-webkit-scrollbar-track {
-background-color: #1b2030 !important;
-border-left-color: #343d52 !important;
-}
-
-.edit-area::-webkit-scrollbar-thumb,
-.preview-area::-webkit-scrollbar-thumb {
-background-color: #5876a5 !important;
-border-color: #1b2030 !important;
-}
-
-.edit-area::-webkit-scrollbar-thumb:hover,
-.preview-area::-webkit-scrollbar-thumb:hover {
-background-color: #6c8fc3 !important;
-}
-
-.edit-area::-webkit-scrollbar-button:single-button:vertical:decrement,
-.preview-area::-webkit-scrollbar-button:single-button:vertical:decrement,
-.edit-area::-webkit-scrollbar-button:single-button:vertical:increment,
-.preview-area::-webkit-scrollbar-button:single-button:vertical:increment {
-background-color: #242a3a !important;
-border-left-color: #343d52 !important;
-}
-
-/* 日期选择器也跟随深色工作区 */
-.flatpickr-calendar {
-background: #252c3c !important;
-border-color: #46506a !important;
-box-shadow: 0 10px 28px rgba(0,0,0,0.35) !important;
-}
-
-.flatpickr-months .flatpickr-month,
-.flatpickr-current-month .flatpickr-monthDropdown-months,
-.flatpickr-current-month input.cur-year,
-span.flatpickr-weekday,
-.flatpickr-day {
-color: #edf2f8 !important;
-fill: #edf2f8 !important;
-}
-
-.flatpickr-day:hover,
-.flatpickr-day:focus {
-background: #3a455d !important;
-border-color: #3a455d !important;
-}
-
-.flatpickr-day.selected,
-.flatpickr-day.startRange,
-.flatpickr-day.endRange {
-background: var(--accent-color) !important;
-border-color: var(--accent-color) !important;
-color: #fff !important;
-}
-
-.flatpickr-day.prevMonthDay,
-.flatpickr-day.nextMonthDay {
-color: #768399 !important;
-}
-
-</style>
-
-<style id="charcoal-soft-theme">
-:root {
---charcoal-bg: #171717;
---charcoal-panel: #202020;
---charcoal-card: #282828;
---charcoal-card-2: #2e2e2e;
---charcoal-input: #1c1c1c;
---charcoal-border: #414141;
---soft-text: #d4d0c8;
---soft-text-2: #aaa59d;
---soft-text-3: #8f8a83;
-}
-
-html, body {
-background: var(--charcoal-bg) !important;
+:root{
+  --bg:#101112;
+  --panel:#191b1d;
+  --panel-2:#202326;
+  --card:#24272a;
+  --card-2:#2b2e32;
+  --input:#161819;
+  --line:#3b3f43;
+  --line-soft:#303438;
+  --text:#dedad2;
+  --muted:#a5a198;
+  --muted-2:#7f7b75;
+  --blue:#0b3c6f;
+  --blue-2:#15589a;
+  --blue-soft:#eaf2f9;
+  --green:#2bb45a;
+  --green-2:#23994c;
+  --amber:#f2b233;
+  --danger:#e46b6b;
+  --paper:#ffffff;
+  --paper-text:#24313f;
+  --paper-muted:#687482;
+  --paper-line:#dce4ec;
+  --shadow:0 22px 60px rgba(0,0,0,.28);
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",Arial,sans-serif;color:var(--text)}
+body{padding:16px;overflow:hidden}
+button,input,textarea,select{font:inherit}
+button{user-select:none}
+
+.app-shell{
+  width:min(1580px,100%);
+  height:calc(100vh - 32px);
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:minmax(540px,1.12fr) minmax(470px,.88fr);
+  gap:24px;
+}
+
+.editor,
+.preview-wrap{
+  min-height:0;
+  border:1px solid #24272a;
+  border-radius:18px;
+}
+
+.editor{
+  background:var(--panel);
+  box-shadow:0 10px 32px rgba(0,0,0,.18);
+  padding:22px;
+  overflow:auto;
+}
+
+.preview-wrap{
+  background:#141516;
+  padding:0 10px 24px 0;
+  overflow:auto;
+  border-color:transparent;
+}
+
+/* ---------- 滚动条 ---------- */
+.editor::-webkit-scrollbar,.preview-wrap::-webkit-scrollbar{width:11px}
+.editor::-webkit-scrollbar-track,.preview-wrap::-webkit-scrollbar-track{background:#141516}
+.editor::-webkit-scrollbar-thumb,.preview-wrap::-webkit-scrollbar-thumb{background:#50545a;border-radius:20px;border:3px solid #141516}
+.editor::-webkit-scrollbar-thumb:hover,.preview-wrap::-webkit-scrollbar-thumb:hover{background:#696e75}
+
+/* ---------- 左侧 ---------- */
+.brand-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
+.brand{display:flex;gap:12px;align-items:center}
+.brand-mark{
+  width:40px;height:40px;border-radius:12px;
+  display:grid;place-items:center;
+  background:linear-gradient(145deg,#2e3337,#202326);
+  border:1px solid #42474c;
+  font-size:21px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+}
+.brand h1{font-size:23px;line-height:1.1;margin:0;color:#e8e4dd;letter-spacing:.2px}
+.brand small{display:block;color:var(--muted-2);font-size:11px;letter-spacing:1.6px;margin-top:6px;font-weight:700}
+.save-state{display:flex;align-items:center;gap:7px;color:#9fd3aa;font-size:12px;white-space:nowrap;padding-top:4px}
+.save-dot{width:7px;height:7px;border-radius:50%;background:#5ac878;box-shadow:0 0 0 4px rgba(90,200,120,.08)}
+
+.section-card{
+  background:var(--panel-2);
+  border:1px solid var(--line-soft);
+  border-radius:13px;
+  padding:14px;
+  margin-bottom:14px;
+}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.section-title{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:800;color:#d9d5ce;letter-spacing:.2px}
+.section-index{font-size:10px;color:#7e858c;border:1px solid #3b4045;border-radius:6px;padding:3px 6px;background:#1b1d1f}
+.section-help{font-size:11px;color:var(--muted-2)}
+
+.data-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.data-note{font-size:11px;color:#8f8b84;line-height:1.55;display:flex;align-items:center;gap:7px}
+.data-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{
+  border:1px solid #484d52;
+  background:#2b2f33;
+  color:#d8d4cc;
+  border-radius:8px;
+  padding:8px 12px;
+  cursor:pointer;
+  font-size:12px;
+  font-weight:750;
+  transition:.18s ease;
+}
+.btn:hover{transform:translateY(-1px);background:#353a3f;border-color:#5b6269}
+.btn:active{transform:translateY(0)}
+.btn.secondary{background:#25282c}
+.btn.import{background:#384047;border-color:#4d5962}
+
+.basic-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.field label{display:block;font-size:11px;color:#98948d;margin:0 0 6px 3px}
+.input,
+.task-text,
+.tip-text,
+.day-input,
+.week-select{
+  width:100%;
+  border:1px solid #41454a;
+  background:var(--input);
+  color:#e0ddd6;
+  border-radius:9px;
+  outline:none;
+  transition:.18s ease;
+}
+.input{height:40px;padding:0 11px;font-size:13px}
+.input::placeholder,.task-text::placeholder,.tip-text::placeholder{color:#6f6c67}
+.input:focus,.task-text:focus,.tip-text:focus,.day-input:focus,.week-select:focus{border-color:#64798b;box-shadow:0 0 0 3px rgba(101,129,151,.10)}
+
+.add-stage{
+  width:100%;height:44px;border-radius:11px;
+  border:1.5px dashed #66717b;
+  background:#1b1d1f;color:#bfc5ca;
+  font-weight:800;font-size:13px;cursor:pointer;
+  transition:.18s ease;margin-bottom:14px;
+}
+.add-stage:hover{background:#24282b;border-color:#8996a1;color:#e0e3e5}
+
+#taskContainer{display:flex;flex-direction:column;gap:12px;margin-bottom:14px}
+.task-card{
+  border:1px solid #3b4045;
+  background:#1e2022;
+  border-radius:14px;
+  overflow:hidden;
+  box-shadow:0 3px 12px rgba(0,0,0,.12);
+}
+.stage-head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:12px 13px;
+  border-bottom:1px solid #34383c;
+  background:#24272a;
+}
+.stage-left{display:flex;align-items:center;gap:10px;min-width:0}
+.day-pill{font-size:10px;letter-spacing:1px;font-weight:900;color:#cbd2d8;background:#34393e;border:1px solid #464d53;border-radius:6px;padding:5px 7px}
+.stage-control{display:flex;align-items:center;gap:7px;color:#a9a59e;font-size:12px}
+.day-input{width:54px;height:31px;text-align:center;padding:0 6px;font-weight:800}
+.week-select{width:78px;height:31px;padding:0 8px}
+.stage-actions{display:flex;gap:5px}
+.icon-btn{
+  width:32px;height:32px;border-radius:8px;border:1px solid #44494e;background:#2b2f33;color:#aba7a0;
+  cursor:pointer;display:grid;place-items:center;font-size:14px;transition:.18s ease
+}
+.icon-btn:hover{background:#373c40;color:#e2ded6}
+.icon-btn.delete:hover{background:#3d292b;border-color:#694144;color:#efb0b0}
+.icon-btn.collapse span{transition:transform .2s ease;display:block}
+.task-card.collapsed .icon-btn.collapse span{transform:rotate(-90deg)}
+.task-card.collapsed .task-body{display:none}
+
+.task-body{padding:12px;display:flex;flex-direction:column;gap:9px}
+.task-module{
+  border:1px solid #363b3f;
+  background:#24272a;
+  border-radius:10px;
+  padding:10px;
+  transition:.18s ease;
+}
+.task-module.active{border-color:#536779;background:#262b2f}
+.module-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.switch{position:relative;width:34px;height:19px;flex:0 0 auto}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;border-radius:20px;background:#4b4e51;cursor:pointer;transition:.2s}
+.slider:before{content:"";position:absolute;width:13px;height:13px;left:3px;top:3px;border-radius:50%;background:#c4c0b8;transition:.2s}
+.switch input:checked + .slider{background:#376a94}
+.switch input:checked + .slider:before{transform:translateX(15px);background:white}
+.module-name{font-size:13px;font-weight:800;color:#d6d2cb;display:flex;align-items:center;gap:8px}
+.module-code{font-size:9px;letter-spacing:.7px;color:#7f8b94;background:#1d2022;border:1px solid #3b4248;border-radius:5px;padding:3px 5px;font-weight:800}
+.task-text{min-height:58px;resize:vertical;padding:8px 10px;font-size:12.5px;line-height:1.55}
+.task-module:not(.active) .task-text{opacity:.48}
+
+.tip-text{min-height:88px;resize:vertical;padding:10px 11px;font-size:13px;line-height:1.6}
+
+.export-panel{
+  position:sticky;bottom:-1px;z-index:10;
+  margin-top:16px;padding-top:12px;
+  background:linear-gradient(to bottom,rgba(25,27,29,0),var(--panel) 28%);
+}
+.export-btn{
+  width:100%;height:50px;border:0;border-radius:11px;
+  background:linear-gradient(135deg,#2dba5d,#25a951);
+  color:white;font-size:15px;font-weight:900;letter-spacing:.2px;
+  cursor:pointer;box-shadow:0 8px 20px rgba(34,170,80,.17);transition:.18s ease;
+}
+.export-btn:hover{transform:translateY(-1px);filter:brightness(1.04)}
+.export-btn:disabled{opacity:.68;cursor:wait;transform:none}
+.export-hint{text-align:center;color:#77736d;font-size:10px;margin-top:7px}
+
+.toast{
+  position:fixed;left:50%;bottom:24px;transform:translate(-50%,12px);
+  background:#22272b;border:1px solid #41484e;color:#dcd9d1;
+  padding:10px 14px;border-radius:10px;font-size:12px;opacity:0;pointer-events:none;
+  transition:.24s ease;z-index:99999;box-shadow:0 12px 35px rgba(0,0,0,.28)
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.error{border-color:#704548;background:#342729;color:#f0c6c6}
+
+/* ---------- 右侧纸张 ---------- */
+.guide-paper{
+  width:min(760px,100%);
+  min-height:880px;
+  margin:0 auto;
+  background:var(--paper);
+  color:var(--paper-text);
+  padding:46px 46px 0;
+  border-radius:6px;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+  color-scheme:light;
+}
+.paper-header{text-align:center;margin-bottom:22px}
+.paper-kicker{font-size:10px;letter-spacing:3.2px;color:#8b99a8;font-weight:900;margin-bottom:8px}
+.paper-title{font-size:29px;line-height:1.2;color:#0b3c6f;margin:0;font-weight:900;letter-spacing:.6px}
+.paper-subtitle{font-size:11px;letter-spacing:2.2px;color:#8392a2;font-weight:800;margin-top:7px}
+.info-row{display:flex;justify-content:center;gap:7px;flex-wrap:wrap;margin-top:13px}
+.info-chip{font-size:11px;line-height:1;color:#0c426f;background:#edf3f8;border:1px solid #e0e9f1;border-radius:999px;padding:6px 10px;font-weight:800}
+.paper-rule{height:2px;background:#0b3c6f;margin-top:16px;opacity:.94}
+
+.p-list{display:flex;flex-direction:column;gap:14px}
+.p-stage{
+  display:grid;grid-template-columns:62px 1fr;gap:14px;
+  border:1px solid var(--paper-line);border-radius:11px;padding:14px 15px 14px 12px;background:#fbfcfd;
+}
+.p-stage-mark{text-align:center}
+.p-day-num{font-size:10px;letter-spacing:1px;color:#7d8a97;font-weight:900}
+.p-day-circle{
+  width:38px;height:38px;border-radius:50%;margin:5px auto 6px;
+  display:grid;place-items:center;background:#0b3c6f;color:#fff;font-size:16px;font-weight:900
+}
+.p-week{font-size:10px;color:#8b97a2;font-weight:800}
+.p-stage-content{border-left:1px solid #e3e9ef;padding-left:15px}
+.p-task{display:grid;grid-template-columns:72px 1fr;gap:10px;align-items:flex-start;padding:5px 0}
+.p-task + .p-task{border-top:1px dashed #e5eaf0}
+.p-task-name{font-size:11px;color:#0f4d7d;font-weight:900;line-height:1.55}
+.p-task-text{font-size:12.5px;color:#3e4b57;line-height:1.62;white-space:pre-wrap;overflow-wrap:anywhere}
+.p-empty{font-size:12px;color:#a1aab4;padding:8px 0}
+
+.p-tip-box{
+  margin-top:20px;border:1px solid #f2d889;background:#fff9e7;border-radius:10px;padding:13px 15px;
+}
+.p-tip-title{font-size:12px;color:#51461e;font-weight:900;margin-bottom:5px;display:flex;align-items:center;gap:7px}
+.p-tip-content{font-size:12.5px;color:#615b49;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;min-height:18px}
+
+.paper-spacer{height:24px}
+.paper-footer{
+  margin:0 -46px 0;
+  background:#0b3c6f;color:#fff;text-align:center;
+  padding:18px 26px 19px;
+}
+.footer-main{font-size:11.5px;font-weight:800;letter-spacing:.15px}
+.footer-sub{font-size:9.5px;opacity:.86;letter-spacing:.9px;margin-top:4px}
+
+/* 导出专用克隆 */
+.export-stage{
+  position:fixed;left:-99999px;top:0;width:760px;z-index:-1000;background:#fff;
+}
+.export-stage .guide-paper{width:760px;min-height:auto;box-shadow:none;border-radius:0;margin:0}
+
+/* flatpickr 深色 */
+.flatpickr-calendar{background:#232628;border:1px solid #454a4e;box-shadow:0 12px 32px rgba(0,0,0,.45)}
+.flatpickr-months .flatpickr-month,.flatpickr-current-month .flatpickr-monthDropdown-months,.flatpickr-current-month input.cur-year,span.flatpickr-weekday,.flatpickr-day{color:#ddd9d1;fill:#ddd9d1}
+.flatpickr-day:hover,.flatpickr-day:focus{background:#363b3f;border-color:#363b3f}
+.flatpickr-day.selected{background:#315f86;border-color:#315f86;color:#fff}
+.flatpickr-day.prevMonthDay,.flatpickr-day.nextMonthDay{color:#74716c}
+
+@media(max-width:1050px){
+  body{overflow:auto}
+  .app-shell{height:auto;grid-template-columns:1fr}
+  .editor,.preview-wrap{overflow:visible;min-height:0}
+  .preview-wrap{padding:0}
+  .guide-paper{margin-bottom:20px}
+}
+@media(max-width:680px){
+  body{padding:9px}
+  .editor{padding:14px;border-radius:14px}
+  .basic-grid{grid-template-columns:1fr}
+  .brand-row{align-items:flex-start}
+  .save-state{display:none}
+  .guide-paper{padding:32px 24px 0}
+  .paper-title{font-size:24px}
+  .p-stage{grid-template-columns:52px 1fr;gap:10px;padding:12px 10px}
+  .p-task{grid-template-columns:62px 1fr;gap:7px}
+  .paper-footer{margin-left:-24px;margin-right:-24px}
 }
 </style>
-
-<style id="charcoal-task-theme">
-body {
-color: var(--soft-text) !important;
-}
-
-.edit-area {
-background: var(--charcoal-panel) !important;
-color: var(--soft-text) !important;
-box-shadow: 0 8px 26px rgba(0,0,0,.34) !important;
-}
-
-.edit-area > h2,
-.edit-area label,
-.edit-area .data-panel-title,
-.edit-area .day-group,
-.edit-area .type-row label {
-color: var(--soft-text) !important;
-}
-
-.data-panel,
-.task-card {
-background: var(--charcoal-card) !important;
-border-color: var(--charcoal-border) !important;
-}
-
-.type-row {
-background: var(--charcoal-card-2) !important;
-border-color: var(--charcoal-border) !important;
-}
-
-.edit-area input:not([type="checkbox"]):not([type="file"]),
-.edit-area textarea,
-.edit-area select,
-.input-item,
-.day-group input,
-.type-row textarea {
-background: var(--charcoal-input) !important;
-color: var(--soft-text) !important;
-border-color: var(--charcoal-border) !important;
-}
-
-.edit-area input::placeholder,
-.edit-area textarea::placeholder {
-color: var(--soft-text-3) !important;
-}
-
-.btn-export-json {
-background: #2b2b2b !important;
-border-color: #626262 !important;
-color: var(--soft-text) !important;
-}
-
-.btn-import-json {
-background: #3a4148 !important;
-color: var(--soft-text) !important;
-}
-
-.btn-add {
-background: #242424 !important;
-border-color: #6e7883 !important;
-color: #b7c0c9 !important;
-}
-
-.btn-add:hover,
-.btn-export-json:hover {
-background: #333 !important;
-}
-
-.preview-area {
-background: var(--charcoal-bg) !important;
-}
-
-.edit-area::-webkit-scrollbar-track,
-.preview-area::-webkit-scrollbar-track {
-background-color: #171717 !important;
-border-left-color: #303030 !important;
-}
-
-.edit-area::-webkit-scrollbar-thumb,
-.preview-area::-webkit-scrollbar-thumb {
-background-color: #666 !important;
-border-color: #171717 !important;
-}
-
-/* 导出纸张继续保持原来的白色，不受深色主题影响 */
-#guidePaper, .guide-paper {
-background: #ffffff !important;
-color: #333333 !important;
-color-scheme: light !important;
-}
-</style>
-
 </head>
-
 <body>
+<div class="app-shell">
 
-<div class="container">
+  <section class="editor" id="editorPanel">
+    <div class="brand-row">
+      <div class="brand">
+        <div class="brand-mark">✎</div>
+        <div>
+          <h1>任务指引生成器</h1>
+          <small>HOMEWORK GUIDE BUILDER</small>
+        </div>
+      </div>
+      <div class="save-state" id="saveState"><span class="save-dot"></span><span>自动保存已开启</span></div>
+    </div>
 
-<div class="edit-area">
+    <div class="section-card">
+      <div class="section-head">
+        <div class="section-title"><span class="section-index">DATA</span> 模板与数据管理</div>
+      </div>
+      <div class="data-toolbar">
+        <div class="data-note">◈ 支持旧版 JSON / TXT 备份，导入时会自动转换为当前格式。</div>
+        <div class="data-actions">
+          <button class="btn secondary" type="button" id="exportJsonBtn">↓ 导出 JSON</button>
+          <button class="btn import" type="button" id="importJsonBtn">↑ 导入 JSON / 历史备份</button>
+          <input id="jsonUpload" type="file" accept=".json,.txt,application/json,text/plain" hidden>
+        </div>
+      </div>
+    </div>
 
-<h2 style="color: var(--primary-color); margin-bottom: 20px;">
-<i class="fas fa-magic"></i> 任务指引生成器
-</h2>
+    <div class="section-card">
+      <div class="section-head">
+        <div class="section-title"><span class="section-index">01</span> 基础信息</div>
+        <div class="section-help">输入后右侧实时同步</div>
+      </div>
+      <div class="basic-grid">
+        <div class="field">
+          <label for="classInput">班级</label>
+          <input id="classInput" class="input" type="text" placeholder="如：三(1)班">
+        </div>
+        <div class="field">
+          <label for="unitInput">单元</label>
+          <input id="unitInput" class="input" type="text" placeholder="如：Unit 5">
+        </div>
+        <div class="field">
+          <label for="dateInput">日期</label>
+          <input id="dateInput" class="input" type="text" placeholder="选择日期或直接输入">
+        </div>
+      </div>
+    </div>
 
-<div class="data-panel">
+    <div class="section-card" style="padding-bottom:12px;">
+      <div class="section-head">
+        <div class="section-title"><span class="section-index">02</span> Day 任务阶段</div>
+        <div class="section-help">勾选需要显示的任务类型</div>
+      </div>
+      <div id="taskContainer"></div>
+      <button class="add-stage" type="button" id="addTaskBtn">＋ 新增 Day 任务阶段</button>
+    </div>
 
-<div class="data-panel-title">
-<i class="fas fa-database"></i> 模板与数据管理
+    <div class="section-card">
+      <div class="section-head">
+        <div class="section-title"><span class="section-index">03</span> 底部温馨提示</div>
+      </div>
+      <textarea id="tipInput" class="tip-text" placeholder="在此输入给家长或学生的温馨提示……"></textarea>
+    </div>
+
+    <div class="export-panel">
+      <button class="export-btn" type="button" id="downloadImgBtn">▣ 生成并导出指引图片</button>
+      <div class="export-hint">右侧预览保持白色，导出图片不受深色操作界面影响</div>
+    </div>
+  </section>
+
+  <section class="preview-wrap" id="previewArea">
+    <article class="guide-paper" id="guidePaper">
+      <header class="paper-header">
+        <div class="paper-kicker">BOBOspeak · AFTER CLASS</div>
+        <h2 class="paper-title">课后任务进程指引</h2>
+        <div class="paper-subtitle">HOMEWORK PROGRESS GUIDE</div>
+        <div class="info-row">
+          <span class="info-chip" id="p-class">未填班级</span>
+          <span class="info-chip" id="p-unit">未填单元</span>
+          <span class="info-chip" id="p-date">未选日期</span>
+        </div>
+        <div class="paper-rule"></div>
+      </header>
+
+      <main class="p-list" id="p-list"></main>
+
+      <section class="p-tip-box" id="p-tip-area">
+        <div class="p-tip-title">● 温馨提示 / Tips</div>
+        <div class="p-tip-content" id="p-tip">暂无额外提示。</div>
+      </section>
+
+      <div class="paper-spacer"></div>
+      <footer class="paper-footer">
+        <div class="footer-main">坚持每天进步一点点，未来一定会感谢现在的努力！</div>
+        <div class="footer-sub">稳定进步 · 追求卓越 · 开启未来</div>
+      </footer>
+    </article>
+  </section>
 </div>
 
-<div class="data-btns">
-
-<button
-class="btn-data btn-export-json"
-onclick="exportJSON()">
-<i class="fas fa-download"></i> 导出 JSON
-</button>
-
-<button
-class="btn-data btn-import-json"
-onclick="document.getElementById('jsonUpload').click()">
-<i class="fas fa-upload"></i> 导入 JSON / 历史备份
-</button>
-
-<input
-type="file"
-id="jsonUpload"
-style="display:none;"
-accept=".json,.txt,application/json,text/plain"
-onchange="importJSON(event)">
-</div>
-</div>
-<div style="font-size:12px; color:var(--soft-text-2); margin:-10px 0 16px; line-height:1.5;">
-<i class="fas fa-shield-alt"></i> 支持自动识别旧版 JSON / TXT 备份，并在导入后转换为当前格式。
-</div>
-
-<div class="top-inputs">
-
-<input
-type="text"
-id="classInput"
-class="input-item"
-placeholder="班级（如：三(1)班）">
-
-<input
-type="text"
-id="unitInput"
-class="input-item"
-placeholder="单元（如：Unit 5）">
-
-<input
-type="text"
-id="dateInput"
-class="input-item"
-placeholder="日期">
-
-</div>
-
-<button class="btn-add" id="addTaskBtn">
-<i class="fas fa-plus-circle"></i> 新增 Day 任务阶段
-</button>
-
-<div id="taskContainer"></div>
-
-<div style="margin-top:20px;">
-
-<label
-style="font-weight:bold; font-size:14px; color:#444;">
-底部温馨提示：
-</label>
-
-<textarea
-id="tipInput"
-class="input-item"
-style="height:80px; margin-top:8px;"
-placeholder="在此输入给家长或学生的温馨提示..."></textarea>
-
-</div>
-
-<div class="final-actions">
-
-<button
-class="btn-main btn-export-img"
-id="downloadImgBtn">
-<i class="fas fa-image"></i> 生成并导出指引图片
-</button>
-
-</div>
-
-<div id="autoSaveTip">
-✅ 已自动保存至浏览器缓存
-</div>
-
-</div>
-
-<div class="preview-area">
-
-<div class="guide-paper" id="guidePaper">
-
-<div class="p-header">
-
-<h1 style="color:var(--primary-color); font-size:28px;">
-课后任务进程指引
-</h1>
-
-<div style="
-font-size:12px;
-color:#888;
-font-weight:bold;
-letter-spacing:2px;
-margin-top:4px;
-">
-HOMEWORK PROGRESS GUIDE
-</div>
-
-<div class="p-tags">
-<span class="p-tag" id="p-class">未填班级</span>
-<span class="p-tag" id="p-unit">未填单元</span>
-<span class="p-tag" id="p-date">未选日期</span>
-</div>
-
-</div>
-
-<div id="p-list"></div>
-
-<div class="p-tip-box" id="p-tip-area">
-
-<div style="font-weight:bold; margin-bottom:5px;">
-<i class="fas fa-lightbulb" style="color:#faad14;"></i>
-温馨提示 / Tips
-</div>
-
-<div id="p-tip"></div>
-
-</div>
-
-<div class="p-footer">
-坚持每天进步一点点，未来一定会感谢现在的努力！<br>
-🚀 稳定进步 · 追求卓越 · 开启未来
-</div>
-
-</div>
-
-</div>
-
-</div>
+<div class="toast" id="toast"></div>
 
 <script>
-
-const config = {
-voice: {
-label: '语音任务',
-icon: 'fa-microphone'
-},
-write: {
-label: '书写任务',
-icon: 'fa-pen-nib'
-},
-listen: {
-label: '磨耳朵任务',
-icon: 'fa-headphones'
-},
-word: {
-label: '单词闯关',
-icon: 'fa-spell-check'
-},
-extend: {
-label: '拓展任务',
-icon: 'fa-star'
-}
-};
-
-let autoSaveTimeout = null;
-let isApplyingData = false;
-
-const BACKUP_SCHEMA_VERSION = 3;
-const BACKUP_APP_ID = 'homework-progress-guide';
-const PRIMARY_STORAGE_KEY = 'autosave_homework_data';
-const LEGACY_STORAGE_KEYS = [
-'autosave_homework_data',
-'autosaveHomeworkData',
-'homework_data',
-'homeworkData',
-'task_progress_data',
-'taskProgressData',
-'task_guide_data',
-'taskGuideData',
-'homework_progress_guide',
-'homeworkProgressGuide',
-'autosave_task_data',
-'autosaveData'
-];
-
-const TASK_TYPE_ALIASES = {
-voice: [
-'voice', 'audio', 'speaking', 'speak', 'pronunciation',
-'语音', '语音任务', '朗读', '朗读任务', '口语', '口语任务'
-],
-write: [
-'write', 'writing', 'handwriting', 'copy',
-'书写', '书写任务', '抄写', '抄写任务'
-],
-listen: [
-'listen', 'listening', 'ear', 'ears',
-'磨耳朵', '磨耳朵任务', '听力', '听力任务'
-],
-word: [
-'word', 'words', 'vocabulary', 'vocab', 'spelling',
-'单词', '单词任务', '单词闯关', '词汇', '词汇任务'
-],
-extend: [
-'extend', 'extension', 'extra', 'expand', 'challenge',
-'拓展', '拓展任务', '扩展', '扩展任务', '进阶', '进阶任务'
-]
-};
-
-function isPlainObject(value) {
-return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
-
-function getByPath(obj, path) {
-if (!isPlainObject(obj)) return undefined;
-const parts = path.split('.');
-let cur = obj;
-for (const part of parts) {
-if (!isPlainObject(cur) && !Array.isArray(cur)) return undefined;
-if (!(part in cur)) return undefined;
-cur = cur[part];
-}
-return cur;
-}
-
-function firstDefined(obj, paths, fallback = undefined) {
-for (const path of paths) {
-const value = getByPath(obj, path);
-if (value !== undefined && value !== null) return value;
-}
-return fallback;
-}
-
-function cleanTextValue(value) {
-if (value === undefined || value === null) return '';
-if (Array.isArray(value)) {
-return value
-.map(item => cleanTextValue(item))
-.filter(Boolean)
-.join('\n');
-}
-if (isPlainObject(value)) {
-const nested = firstDefined(value, [
-'content', 'text', 'value', 'detail', 'details', 'description', 'desc', 'note'
-]);
-if (nested !== undefined) return cleanTextValue(nested);
-return '';
-}
-return String(value);
-}
-
-function normalizeDateValue(value) {
-const raw = cleanTextValue(value).trim();
-if (!raw) return '';
-
-let match = raw.match(/^(\d{4})[.\-/年](\d{1,2})[.\-/月](\d{1,2})(?:日)?$/);
-if (match) {
-return `${match[1]}.${String(match[2]).padStart(2, '0')}.${String(match[3]).padStart(2, '0')}`;
-}
-
-match = raw.match(/^(\d{4})(\d{2})(\d{2})$/);
-if (match) {
-return `${match[1]}.${match[2]}.${match[3]}`;
-}
-
-const parsed = new Date(raw);
-if (!Number.isNaN(parsed.getTime()) && /^\d{4}/.test(raw)) {
-const y = parsed.getFullYear();
-const m = String(parsed.getMonth() + 1).padStart(2, '0');
-const d = String(parsed.getDate()).padStart(2, '0');
-return `${y}.${m}.${d}`;
-}
-
-return raw;
-}
-
-function normalizeWeekValue(value) {
-const raw = cleanTextValue(value).trim();
-if (!raw) return '一';
-
-const zh = raw.replace(/^星期|^周/, '');
-const map = {
-'1': '一', '2': '二', '3': '三', '4': '四', '5': '五', '6': '六', '7': '日', '0': '日',
-'一': '一', '二': '二', '三': '三', '四': '四', '五': '五', '六': '六', '日': '日', '天': '日',
-'mon': '一', 'monday': '一',
-'tue': '二', 'tues': '二', 'tuesday': '二',
-'wed': '三', 'wednesday': '三',
-'thu': '四', 'thur': '四', 'thurs': '四', 'thursday': '四',
-'fri': '五', 'friday': '五',
-'sat': '六', 'saturday': '六',
-'sun': '日', 'sunday': '日'
-};
-return map[zh.toLowerCase()] || zh || '一';
-}
-
-function normalizeTaskTypeName(name) {
-if (name === undefined || name === null) return '';
-const raw = String(name).trim().toLowerCase();
-for (const [type, aliases] of Object.entries(TASK_TYPE_ALIASES)) {
-if (type === raw) return type;
-if (aliases.some(alias => String(alias).toLowerCase() === raw)) return type;
-}
-return '';
-}
-
-function normalizeTaskItem(value, selectedHint = false) {
-if (value === undefined || value === null) {
-return { checked: !!selectedHint, content: '' };
-}
-
-if (typeof value === 'boolean') {
-return { checked: value || !!selectedHint, content: '' };
-}
-
-if (typeof value === 'string' || typeof value === 'number') {
-const content = String(value);
-return {
-checked: !!selectedHint || content.trim().length > 0,
-content
-};
-}
-
-if (Array.isArray(value)) {
-const content = cleanTextValue(value);
-return {
-checked: !!selectedHint || content.trim().length > 0,
-content
-};
-}
-
-if (isPlainObject(value)) {
-const content = cleanTextValue(firstDefined(value, [
-'content', 'text', 'value', 'detail', 'details', 'description', 'desc', 'note', 'task'
-], ''));
-
-const checkedValue = firstDefined(value, [
-'checked', 'enabled', 'selected', 'active', 'open', 'isChecked', 'isSelected', 'show'
-]);
-
-return {
-checked: checkedValue === undefined
-? (!!selectedHint || content.trim().length > 0)
-: (!!checkedValue || !!selectedHint),
-content
-};
-}
-
-return { checked: !!selectedHint, content: '' };
-}
-
-function objectToTaskArray(value) {
-if (Array.isArray(value)) return value;
-if (!isPlainObject(value)) return [];
-
-return Object.entries(value).map(([key, task], index) => {
-if (isPlainObject(task)) {
-const clone = { ...task };
-if (clone.day === undefined && clone.dayNum === undefined && clone.dayNumber === undefined) {
-const num = String(key).match(/\d+/);
-if (num) clone.day = num[0];
-}
-return clone;
-}
-return {
-day: String(key).match(/\d+/)?.[0] || String(index + 1),
-items: task
-};
-});
-}
-
-function normalizeTask(task, index) {
-const source = isPlainObject(task) ? task : {};
-const day = cleanTextValue(firstDefined(source, [
-'day', 'dayNum', 'dayNumber', 'day_no', 'dayNo', 'dayIndex', 'index', 'order'
-], index + 1)).trim() || String(index + 1);
-
-const week = normalizeWeekValue(firstDefined(source, [
-'week', 'weekNum', 'weekNumber', 'weekday', 'weekDay', 'dayOfWeek', 'week_text'
-], '一'));
-
-let rawItems = firstDefined(source, [
-'items', 'taskItems', 'itemMap', 'types', 'contents', 'contentMap', 'tasks'
-], {});
-
-if (Array.isArray(rawItems)) {
-const converted = {};
-rawItems.forEach(item => {
-if (!isPlainObject(item)) return;
-const type = normalizeTaskTypeName(firstDefined(item, ['type', 'key', 'name', 'id', 'label']));
-if (type) converted[type] = item;
-});
-rawItems = converted;
-}
-
-if (!isPlainObject(rawItems)) rawItems = {};
-
-const selectedRaw = firstDefined(source, [
-'selectedTypes', 'checkedTypes', 'enabledTypes', 'activeTypes', 'selected', 'checked'
-], []);
-const selectedSet = new Set(
-(Array.isArray(selectedRaw) ? selectedRaw : [])
-.map(normalizeTaskTypeName)
-.filter(Boolean)
-);
-
-const normalizedItems = {};
-for (const type of Object.keys(config)) {
-let value;
-const aliases = [type, ...(TASK_TYPE_ALIASES[type] || [])];
-
-for (const alias of aliases) {
-if (Object.prototype.hasOwnProperty.call(rawItems, alias)) {
-value = rawItems[alias];
-break;
-}
-}
-
-if (value === undefined) {
-for (const [key, candidate] of Object.entries(rawItems)) {
-if (normalizeTaskTypeName(key) === type) {
-value = candidate;
-break;
-}
-}
-}
-
-if (value === undefined) {
-const directPaths = [];
-for (const alias of aliases) {
-directPaths.push(alias);
-directPaths.push(`${alias}Content`);
-directPaths.push(`${alias}_content`);
-directPaths.push(`${alias}Text`);
-directPaths.push(`${alias}_text`);
-}
-value = firstDefined(source, directPaths);
-}
-
-normalizedItems[type] = normalizeTaskItem(value, selectedSet.has(type));
-}
-
-return { day, week, items: normalizedItems };
-}
-
-function looksLikeBackupObject(value) {
-if (Array.isArray(value)) return true;
-if (!isPlainObject(value)) return false;
-
-const keys = Object.keys(value).map(key => key.toLowerCase());
-const knownKeys = [
-'class', 'classname', 'unit', 'date', 'tip', 'tips', 'notice',
-'tasks', 'tasklist', 'days', 'stages', 'taskdata', 'homeworktasks',
-'basic', 'items', 'schemaVersion'.toLowerCase(), 'app'
-];
-
-if (keys.some(key => knownKeys.includes(key))) return true;
-
-return Object.keys(config).some(type => {
-const aliases = [type, ...(TASK_TYPE_ALIASES[type] || [])].map(v => String(v).toLowerCase());
-return keys.some(key => aliases.includes(key));
-});
-}
-
-function parseBackupText(rawText) {
-let text = String(rawText ?? '').replace(/^\uFEFF/, '').trim();
-if (!text) throw new Error('备份文件为空');
-
-if (/^```/.test(text)) {
-text = text
-.replace(/^```(?:json)?\s*/i, '')
-.replace(/\s*```$/, '')
-.trim();
-}
-
-let parsed;
-try {
-parsed = JSON.parse(text);
-} catch (error) {
-throw new Error('文件不是有效的 JSON 备份');
-}
-
-for (let i = 0; i < 2 && typeof parsed === 'string'; i++) {
-const nested = parsed.trim();
-if (!nested) break;
-try {
-parsed = JSON.parse(nested);
-} catch (_) {
-break;
-}
-}
-
-return parsed;
-}
-
-function unwrapBackupRoot(rawData, report) {
-let data = rawData;
-
-if (Array.isArray(data)) {
-report.migrated = true;
-report.notes.push('识别到旧版任务数组结构');
-return { tasks: data };
-}
-
-if (!isPlainObject(data)) {
-throw new Error('备份根节点不是对象或任务数组');
-}
-
-const wrapperKeys = [
-'data', 'payload', 'backup', 'state', 'homeworkData', 'homework_data',
-'formData', 'form_data', 'snapshot', 'content'
-];
-
-for (let depth = 0; depth < 4; depth++) {
-let unwrapped = false;
-for (const key of wrapperKeys) {
-const candidate = data[key];
-if ((isPlainObject(candidate) || Array.isArray(candidate)) && looksLikeBackupObject(candidate)) {
-report.migrated = true;
-report.notes.push(`已展开旧版包装字段：${key}`);
-data = Array.isArray(candidate) ? { tasks: candidate } : candidate;
-unwrapped = true;
-break;
-}
-}
-if (!unwrapped) break;
-}
-
-return data;
-}
-
-function migrateBackupData(rawData) {
-const report = {
-migrated: false,
-sourceVersion: null,
-notes: []
-};
-
-const root = unwrapBackupRoot(rawData, report);
-if (!looksLikeBackupObject(root)) {
-throw new Error('未识别到任务指引备份字段');
-}
-
-const versionRaw = firstDefined(root, ['schemaVersion', 'version', 'dataVersion', 'backupVersion']);
-report.sourceVersion = versionRaw ?? null;
-if (versionRaw === undefined || Number(versionRaw) !== BACKUP_SCHEMA_VERSION) {
-report.migrated = true;
-}
-
-const className = cleanTextValue(firstDefined(root, [
-'class', 'className', 'classname', 'class_name', 'clazz', 'classInput', 'basic.className', 'basic.class'
-], '')).trim();
-
-const unit = cleanTextValue(firstDefined(root, [
-'unit', 'unitName', 'unit_name', 'unitInput', 'basic.unit', 'basic.unitName'
-], '')).trim();
-
-const date = normalizeDateValue(firstDefined(root, [
-'date', 'taskDate', 'lessonDate', 'dateInput', 'basic.date', 'basic.date1'
-], ''));
-
-const tip = cleanTextValue(firstDefined(root, [
-'tip', 'tips', 'notice', 'message', 'tipInput', 'footerTip', 'warmTip', 'basic.tip'
-], ''));
-
-let rawTasks = firstDefined(root, [
-'tasks', 'taskList', 'task_list', 'days', 'stages', 'taskData', 'task_data',
-'homeworkTasks', 'homework_tasks', 'progress', 'progressList'
-]);
-
-if (rawTasks === undefined) {
-const hasDirectTaskField = Object.keys(config).some(type => {
-const aliases = [type, ...(TASK_TYPE_ALIASES[type] || [])];
-return aliases.some(alias => Object.prototype.hasOwnProperty.call(root, alias));
-});
-if (hasDirectTaskField) {
-rawTasks = [root];
-report.migrated = true;
-report.notes.push('识别到旧版单阶段任务结构');
-}
-}
-
-const taskArray = objectToTaskArray(rawTasks);
-const tasks = taskArray.map((task, index) => normalizeTask(task, index));
-
-const normalized = {
-schemaVersion: BACKUP_SCHEMA_VERSION,
-app: BACKUP_APP_ID,
-class: className,
-unit,
-date,
-tip,
-tasks
-};
-
-if (!tasks.length && !className && !unit && !date && !tip) {
-throw new Error('备份中没有可恢复的有效内容');
-}
-
-return { data: normalized, report };
-}
-
-function safeStorageSet(key, value) {
-try {
-localStorage.setItem(key, value);
-return true;
-} catch (error) {
-console.warn(`写入缓存失败：${key}`, error);
-return false;
-}
-}
-
-function saveCurrentDataToStorage(showTip = false) {
-const data = getCurrentData();
-const saved = safeStorageSet(PRIMARY_STORAGE_KEY, JSON.stringify(data));
-if (!saved) return false;
-
-if (showTip) {
-const tip = document.getElementById('autoSaveTip');
-tip.innerText = '✅ 已自动保存至浏览器缓存';
-tip.style.opacity = '1';
-setTimeout(() => {
-tip.style.opacity = '0';
-}, 1500);
-}
-return true;
-}
-
-function getStorageCandidates() {
-const candidates = [];
-const seen = new Set();
-
-const pushKey = key => {
-if (!key || seen.has(key)) return;
-seen.add(key);
-let raw = null;
-try {
-raw = localStorage.getItem(key);
-} catch (_) {}
-if (raw) candidates.push({ key, raw });
-};
-
-LEGACY_STORAGE_KEYS.forEach(pushKey);
-
-try {
-for (let i = 0; i < localStorage.length; i++) {
-const key = localStorage.key(i);
-if (!key) continue;
-if (/(homework|task|guide|progress)/i.test(key)) pushKey(key);
-}
-} catch (_) {}
-
-return candidates;
-}
-
-function restoreFromBrowserStorage() {
-const candidates = getStorageCandidates();
-for (const candidate of candidates) {
-try {
-const parsed = parseBackupText(candidate.raw);
-const migrated = migrateBackupData(parsed);
-applyDataToUI(migrated.data, { persist: false });
-
-if (candidate.key !== PRIMARY_STORAGE_KEY || migrated.report.migrated) {
-safeStorageSet(PRIMARY_STORAGE_KEY, JSON.stringify(getCurrentData()));
-}
-
-return {
-ok: true,
-key: candidate.key,
-report: migrated.report
-};
-} catch (error) {
-console.warn(`跳过无法读取的历史缓存：${candidate.key}`, error);
-}
-}
-
-return { ok: false };
-}
-
-flatpickr("#dateInput", {
-locale: "zh",
-dateFormat: "Y.m.d",
-defaultDate: new Date(),
-onChange: triggerUpdate
-});
-
-
-function getCurrentData() {
-
-const tasks = [];
-
-document
-.querySelectorAll('.task-card')
-.forEach(card => {
-
-const taskObj = {
-day: card.querySelector('.day-num').value,
-week: card.querySelector('.week-num').value,
-items: {}
-};
-
-Object.keys(config).forEach(type => {
-
-taskObj.items[type] = {
-checked: card.querySelector(`.cb-${type}`).checked,
-content: card.querySelector(`.ta-${type}`).value
-};
-
-});
-
-tasks.push(taskObj);
-
-});
-
-return {
-schemaVersion: BACKUP_SCHEMA_VERSION,
-app: BACKUP_APP_ID,
-savedAt: new Date().toISOString(),
-class: document.getElementById('classInput').value,
-unit: document.getElementById('unitInput').value,
-date: document.getElementById('dateInput').value,
-tip: document.getElementById('tipInput').value,
-tasks: tasks
-};
-}
-
-
-function applyDataToUI(rawData, options = {}) {
-const migrated = migrateBackupData(rawData);
-const data = migrated.data;
-
-isApplyingData = true;
-clearTimeout(autoSaveTimeout);
-
-try {
-document.getElementById('classInput').value = data.class || '';
-document.getElementById('unitInput').value = data.unit || '';
-document.getElementById('dateInput').value = data.date || '';
-document.getElementById('tipInput').value = data.tip || '';
-
-const fp = document.getElementById('dateInput')._flatpickr;
-if (fp) {
-if (data.date) {
-fp.setDate(data.date, false, 'Y.m.d');
-} else {
-fp.clear(false);
-}
-}
-
-const taskContainer = document.getElementById('taskContainer');
-taskContainer.innerHTML = '';
-
-if (Array.isArray(data.tasks) && data.tasks.length > 0) {
-data.tasks.forEach(task => {
-createTaskCard(task);
-});
-} else {
-createTaskCard();
-}
-} finally {
-isApplyingData = false;
-}
-
-syncPreview();
-
-if (options.persist !== false) {
-safeStorageSet(PRIMARY_STORAGE_KEY, JSON.stringify(getCurrentData()));
-}
-
-return migrated.report;
-}
-
-
-function triggerUpdate() {
-
-syncPreview();
-
-if (isApplyingData) {
-return;
-}
-
-clearTimeout(autoSaveTimeout);
-
-autoSaveTimeout = setTimeout(() => {
-try {
-saveCurrentDataToStorage(true);
-} catch (error) {
-console.error('自动保存失败：', error);
-}
-}, 800);
-}
-
-
-window.onload = () => {
-const restored = restoreFromBrowserStorage();
-
-if (!restored.ok) {
-isApplyingData = true;
-try {
-createTaskCard();
-} finally {
-isApplyingData = false;
-}
-syncPreview();
-return;
-}
-
-if (restored.report && restored.report.migrated) {
-const tip = document.getElementById('autoSaveTip');
-tip.innerText = '✅ 已自动兼容并恢复历史缓存';
-tip.style.opacity = '1';
-setTimeout(() => {
-tip.style.opacity = '0';
-tip.innerText = '✅ 已自动保存至浏览器缓存';
-}, 2500);
-}
-};
-
-
-function exportJSON() {
-
-try {
-
-const data =
-getCurrentData();
-
-const jsonStr =
-JSON.stringify(
-data,
-null,
-2
-);
-
-const blob =
-new Blob(
-[jsonStr],
-{
-type:
-"application/json;charset=utf-8"
-}
-);
-
-const url =
-URL.createObjectURL(blob);
-
-const a =
-document.createElement('a');
-
-const now =
-new Date();
-
-const timeStr =
-`${now.getFullYear()}` +
-`${(now.getMonth() + 1)
-.toString()
-.padStart(2, '0')}` +
-`${now.getDate()
-.toString()
-.padStart(2, '0')}` +
-`_` +
-`${now.getHours()
-.toString()
-.padStart(2, '0')}` +
-`${now.getMinutes()
-.toString()
-.padStart(2, '0')}` +
-`${now.getSeconds()
-.toString()
-.padStart(2, '0')}`;
-
-a.href = url;
-
-a.download =
-`任务配置备份_${timeStr}.json`;
-
-a.style.display = 'none';
-
-document.body.appendChild(a);
-
-a.click();
-
-document.body.removeChild(a);
-
-setTimeout(() => {
-URL.revokeObjectURL(url);
-}, 1000);
-
-} catch (error) {
-
-console.error(
-'JSON 导出失败：',
-error
-);
-
-alert(
-'❌ JSON 导出失败，请重试。'
-);
-}
-}
-
-
-function importJSON(event) {
-
-const file = event.target.files[0];
-if (!file) return;
-
-const reader = new FileReader();
-
-reader.onload = function(e) {
-try {
-const rawData = parseBackupText(e.target.result);
-const migration = migrateBackupData(rawData);
-const report = applyDataToUI(migration.data, { persist: true });
-
-const tip = document.getElementById('autoSaveTip');
-const oldVersion = report.sourceVersion;
-const versionInfo = oldVersion !== null && oldVersion !== undefined
-? `（旧版 v${oldVersion} → 当前 v${BACKUP_SCHEMA_VERSION}）`
-: '（已按当前格式整理）';
-
-tip.innerText = report.migrated
-? `✅ 历史备份读取成功 ${versionInfo}`
-: '✅ JSON 数据导入成功并已覆盖缓存';
-tip.style.opacity = '1';
-
-setTimeout(() => {
-tip.style.opacity = '0';
-tip.innerText = '✅ 已自动保存至浏览器缓存';
-}, 3000);
-
-} catch (error) {
-console.error('JSON 导入失败：', error);
-alert(
-'❌ 备份读取失败。\n\n' +
-'原因：' + (error.message || error) + '\n\n' +
-'新版已兼容常见历史备份结构；如果这份文件仍无法读取，请保留原备份文件，不要覆盖它。'
-);
-}
-};
-
-reader.onerror = function() {
-alert('❌ 备份文件读取失败，请重新选择文件。');
-};
-
-reader.readAsText(file, 'utf-8');
-event.target.value = '';
-}
-
-
-document
-.getElementById('downloadImgBtn')
-.addEventListener(
-'click',
-exportGuideImage
-);
-
-
-async function exportGuideImage() {
-
-const btn =
-document.getElementById(
-'downloadImgBtn'
-);
-
-const guidePaper =
-document.getElementById(
-'guidePaper'
-);
-
-const previewArea =
-document.querySelector(
-'.preview-area'
-);
-
-const cName =
-document
-.getElementById(
-'classInput'
-)
-.value
-.trim() ||
-'未命名班级';
-
-const dName =
-document
-.getElementById(
-'dateInput'
-)
-.value
-.trim() ||
-'日期未知';
-
-const rawFileName =
-`${cName}-任务进程建议-${dName}.png`;
-
-const safeFileName =
-rawFileName.replace(
-/[\\/:*?"<>|]/g,
-'-'
-);
-
-
-if (
-typeof html2canvas ===
-'undefined'
-) {
-
-alert(
-'❌ 图片生成组件没有加载成功。\n\n' +
-'请检查网络后刷新页面，再重新点击导出图片。'
-);
-
-return;
-}
-
-
-btn.disabled = true;
-
-const oldButtonHTML =
-btn.innerHTML;
-
-btn.innerHTML =
-'<i class="fas fa-spinner fa-spin"></i> 正在生成图片...';
-
-
-const oldPreviewStyle = {
-maxHeight:
-previewArea.style.maxHeight,
-
-overflow:
-previewArea.style.overflow,
-
-paddingRight:
-previewArea.style.paddingRight
-};
-
-
-try {
-
-syncPreview();
-
-
-previewArea.style.maxHeight =
-'none';
-
-previewArea.style.overflow =
-'visible';
-
-previewArea.style.paddingRight =
-'0';
-
-
-await new Promise(resolve => {
-
-requestAnimationFrame(() => {
-
-requestAnimationFrame(
-resolve
-);
-
-});
-
-});
-
-
-if (
-document.fonts &&
-document.fonts.ready
-) {
-
-try {
-
-await document.fonts.ready;
-
-} catch (fontError) {
-
-console.warn(
-'字体等待失败：',
-fontError
-);
-}
-}
-
-
-const exportWidth =
-Math.ceil(
-guidePaper.scrollWidth
-);
-
-const exportHeight =
-Math.ceil(
-guidePaper.scrollHeight
-);
-
-
-if (
-exportWidth <= 0 ||
-exportHeight <= 0
-) {
-
-throw new Error(
-'导出区域尺寸异常'
-);
-}
-
-
-let exportScale = 2;
-
-if (exportHeight > 12000) {
-exportScale = 1.5;
-}
-
-if (exportHeight > 18000) {
-exportScale = 1;
-}
-
-
-const canvas =
-await html2canvas(
-guidePaper,
-{
-
-scale:
-exportScale,
-
-useCORS:
-true,
-
-allowTaint:
-false,
-
-backgroundColor:
-'#ffffff',
-
-logging:
-false,
-
-scrollX:
-0,
-
-scrollY:
-0,
-
-width:
-exportWidth,
-
-height:
-exportHeight,
-
-windowWidth:
-Math.max(
-document.documentElement.clientWidth,
-exportWidth
-),
-
-windowHeight:
-Math.max(
-document.documentElement.clientHeight,
-exportHeight
-),
-
-onclone:
-function(
-clonedDocument
-) {
-
-const clonedPaper =
-clonedDocument
-.getElementById(
-'guidePaper'
-);
-
-if (
-clonedPaper
-) {
-
-clonedPaper.style.height =
-'auto';
-
-clonedPaper.style.maxHeight =
-'none';
-
-clonedPaper.style.overflow =
-'visible';
-
-clonedPaper.style.boxShadow =
-'none';
-}
-
-const clonedPreview =
-clonedDocument
-.querySelector(
-'.preview-area'
-);
-
-if (
-clonedPreview
-) {
-
-clonedPreview.style.height =
-'auto';
-
-clonedPreview.style.maxHeight =
-'none';
-
-clonedPreview.style.overflow =
-'visible';
-
-clonedPreview.style.paddingRight =
-'0';
-}
-}
-}
-);
-
-
-const blob =
-await new Promise(
-(
-resolve,
-reject
-) => {
-
-canvas.toBlob(
-function(result) {
-
-if (
-result
-) {
-
-resolve(
-result
-);
-
-} else {
-
-reject(
-new Error(
-'Canvas 转换为 PNG 失败'
-)
-);
-}
-
-},
-'image/png',
-1
-);
-}
-);
-
-
-const url =
-URL.createObjectURL(
-blob
-);
-
-const link =
-document.createElement(
-'a'
-);
-
-link.href =
-url;
-
-link.download =
-safeFileName;
-
-link.style.display =
-'none';
-
-document.body.appendChild(
-link
-);
-
-link.click();
-
-document.body.removeChild(
-link
-);
-
-
-setTimeout(
-() => {
-
-URL.revokeObjectURL(
-url
-);
-
-},
-3000
-);
-
-
-} catch (error) {
-
-console.error(
-'图片导出失败：',
-error
-);
-
-alert(
-'❌ 图片生成失败。\n\n' +
-'错误信息：' +
-(
-error.message ||
-error
-) +
-'\n\n' +
-'你可以先刷新网页后再试一次。'
-);
-
-
-} finally {
-
-previewArea.style.maxHeight =
-oldPreviewStyle.maxHeight;
-
-previewArea.style.overflow =
-oldPreviewStyle.overflow;
-
-previewArea.style.paddingRight =
-oldPreviewStyle.paddingRight;
-
-
-btn.disabled =
-false;
-
-btn.innerHTML =
-oldButtonHTML;
-}
-}
-
-
-function syncPreview() {
-
-document.getElementById(
-'p-class'
-).innerText =
-document.getElementById(
-'classInput'
-).value ||
-'未填班级';
-
-
-document.getElementById(
-'p-unit'
-).innerText =
-document.getElementById(
-'unitInput'
-).value ||
-'未填单元';
-
-
-document.getElementById(
-'p-date'
-).innerText =
-document.getElementById(
-'dateInput'
-).value ||
-'未选日期';
-
-
-document.getElementById(
-'p-tip'
-).innerText =
-document.getElementById(
-'tipInput'
-).value ||
-'暂无内容。';
-
-
-const pList =
-document.getElementById(
-'p-list'
-);
-
-pList.innerHTML =
-'';
-
-
-document
-.querySelectorAll(
-'.task-card'
-)
-.forEach(card => {
-
-const d =
-card.querySelector(
-'.day-num'
-).value;
-
-const w =
-card.querySelector(
-'.week-num'
-).value;
-
-
-const item =
-document.createElement(
-'div'
-);
-
-item.className =
-'p-item';
-
-
-const dayLabel =
-document.createElement(
-'div'
-);
-
-dayLabel.className =
-'p-day-label';
-
-dayLabel.textContent =
-`Day ${d} / 星期${w}`;
-
-item.appendChild(
-dayLabel
-);
-
-
-let hasAny =
-false;
-
-
-Object.keys(
-config
-).forEach(type => {
-
-const checked =
-card.querySelector(
-`.cb-${type}`
-).checked;
-
-const text =
-card.querySelector(
-`.ta-${type}`
-).value;
-
-
-if (
-checked
-) {
-
-hasAny =
-true;
-
-
-const row =
-document.createElement(
-'div'
-);
-
-row.className =
-'p-row';
-
-
-const title =
-document.createElement(
-'b'
-);
-
-
-const icon =
-document.createElement(
-'i'
-);
-
-icon.className =
-`fas ${config[type].icon}`;
-
-
-const labelText =
-document.createTextNode(
-` ${config[type].label}`
-);
-
-
-title.appendChild(
-icon
-);
-
-title.appendChild(
-labelText
-);
-
-
-const paragraph =
-document.createElement(
-'p'
-);
-
-paragraph.textContent =
-text ||
-'(见课本)';
-
-
-row.appendChild(
-title
-);
-
-row.appendChild(
-paragraph
-);
-
-item.appendChild(
-row
-);
-}
-});
-
-
-if (
-!hasAny
-) {
-
-const emptyText =
-document.createElement(
-'p'
-);
-
-emptyText.style.fontSize =
-'12px';
-
-emptyText.style.color =
-'#999';
-
-emptyText.style.paddingLeft =
-'24px';
-
-emptyText.textContent =
-'(此阶段暂未安排任务)';
-
-item.appendChild(
-emptyText
-);
-}
-
-
-pList.appendChild(
-item
-);
-});
-}
-
-
-function createTaskCard(
-data = null
-) {
-
-const container =
-document.getElementById(
-'taskContainer'
-);
-
-const card =
-document.createElement(
-'div'
-);
-
-card.className =
-'task-card';
-
-
-const dayGroup =
-document.createElement(
-'div'
-);
-
-dayGroup.className =
-'day-group';
-
-
-dayGroup.appendChild(
-document.createTextNode(
-'Day '
-)
-);
-
-
-const dayInput =
-document.createElement(
-'input'
-);
-
-dayInput.type =
-'text';
-
-dayInput.className =
-'day-num';
-
-dayInput.value =
-data
-? (
-data.day ??
-''
-)
-: (
-container.children.length +
-1
-);
-
-
-dayGroup.appendChild(
-dayInput
-);
-
-
-dayGroup.appendChild(
-document.createTextNode(
-' / 星期 '
-)
-);
-
-
-const weekInput =
-document.createElement(
-'input'
-);
-
-weekInput.type =
-'text';
-
-weekInput.className =
-'week-num';
-
-weekInput.value =
-data
-? (
-data.week ??
-''
-)
-: '一';
-
-
-dayGroup.appendChild(
-weekInput
-);
-
-
-card.appendChild(
-dayGroup
-);
-
-
-Object.keys(
-config
-).forEach(type => {
-
-const typeRow =
-document.createElement(
-'div'
-);
-
-typeRow.className =
-'type-row';
-
-
-const label =
-document.createElement(
-'label'
-);
-
-
-const checkbox =
-document.createElement(
-'input'
-);
-
-checkbox.type =
-'checkbox';
-
-checkbox.className =
-`cb-${type}`;
-
-
-if (
-data &&
-data.items &&
-data.items[type]
-) {
-
-checkbox.checked =
-!!data.items[type].checked;
-}
-
-
-label.appendChild(
-checkbox
-);
-
-
-label.appendChild(
-document.createTextNode(
-` ${config[type].label}`
-)
-);
-
-
-const textarea =
-document.createElement(
-'textarea'
-);
-
-textarea.className =
-`ta-${type}`;
-
-textarea.placeholder =
-'输入任务详情...';
-
-
-if (
-data &&
-data.items &&
-data.items[type]
-) {
-
-textarea.value =
-data.items[type].content ||
-'';
-}
-
-
-typeRow.appendChild(
-label
-);
-
-typeRow.appendChild(
-textarea
-);
-
-card.appendChild(
-typeRow
-);
-});
-
-
-const deleteButton =
-document.createElement(
-'button'
-);
-
-deleteButton.className =
-'btn-del';
-
-deleteButton.innerHTML =
-'<i class="fas fa-trash-alt"></i> 移除此天任务';
-
-deleteButton.addEventListener(
-'click',
-() => {
-
-card.remove();
-
-triggerUpdate();
-
-}
-);
-
-
-card.appendChild(
-deleteButton
-);
-
-
-container.appendChild(
-card
-);
-
-
-card
-.querySelectorAll(
-'input, textarea'
-)
-.forEach(el => {
-
-el.addEventListener(
-'input',
-triggerUpdate
-);
-
-el.addEventListener(
-'change',
-triggerUpdate
-);
-});
-
-
-triggerUpdate();
-}
-
-
-[
-'classInput',
-'unitInput',
-'dateInput',
-'tipInput'
-].forEach(id => {
-
-document
-.getElementById(id)
-.addEventListener(
-'input',
-triggerUpdate
-);
-
-});
-
-
-document
-.getElementById(
-'addTaskBtn'
-)
-.addEventListener(
-'click',
-() => {
-
-createTaskCard();
-
-}
-);
-
+(() => {
+  'use strict';
+
+  const CURRENT_KEY = 'bobo_task_progress_guide_v3';
+  const LEGACY_KEYS = [
+    'autosave_homework_data',
+    'homework_progress_guide_autosave',
+    'task_progress_generator_data',
+    'task_progress_data',
+    'homeworkGuideData'
+  ];
+
+  const TASK_CONFIG = {
+    voice:  { label:'语音任务',  code:'VOICE'  },
+    write:  { label:'书写任务',  code:'WRITE'  },
+    listen: { label:'磨耳朵任务',code:'LISTEN' },
+    word:   { label:'单词闯关',  code:'WORDS'  },
+    extend: { label:'拓展任务',  code:'EXTEND' }
+  };
+
+  const TYPE_ALIASES = {
+    voice:  ['voice','speaking','speak','audio','oral','recording'],
+    write:  ['write','writing','handwriting','copy','written'],
+    listen: ['listen','listening','ear','ears','audioListen'],
+    word:   ['word','words','vocabulary','vocab','spelling'],
+    extend: ['extend','extension','extra','reading','expand']
+  };
+
+  const els = {
+    classInput: document.getElementById('classInput'),
+    unitInput: document.getElementById('unitInput'),
+    dateInput: document.getElementById('dateInput'),
+    tipInput: document.getElementById('tipInput'),
+    taskContainer: document.getElementById('taskContainer'),
+    addTaskBtn: document.getElementById('addTaskBtn'),
+    exportJsonBtn: document.getElementById('exportJsonBtn'),
+    importJsonBtn: document.getElementById('importJsonBtn'),
+    jsonUpload: document.getElementById('jsonUpload'),
+    downloadImgBtn: document.getElementById('downloadImgBtn'),
+    saveState: document.getElementById('saveState'),
+    pClass: document.getElementById('p-class'),
+    pUnit: document.getElementById('p-unit'),
+    pDate: document.getElementById('p-date'),
+    pList: document.getElementById('p-list'),
+    pTip: document.getElementById('p-tip'),
+    toast: document.getElementById('toast')
+  };
+
+  let saveTimer = null;
+  let restoring = false;
+  let toastTimer = null;
+
+  function showToast(message, type='ok') {
+    clearTimeout(toastTimer);
+    els.toast.textContent = message;
+    els.toast.className = 'toast show' + (type === 'error' ? ' error' : '');
+    toastTimer = setTimeout(() => els.toast.className = 'toast', 2300);
+  }
+
+  function safeText(v) {
+    if (v === null || v === undefined) return '';
+    return String(v);
+  }
+
+  function firstValue(...values) {
+    for (const v of values) {
+      if (v !== undefined && v !== null && String(v).trim() !== '') return v;
+    }
+    return '';
+  }
+
+  function firstObjectValue(obj, keys) {
+    if (!obj || typeof obj !== 'object') return undefined;
+    for (const key of keys) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) return obj[key];
+    }
+    return undefined;
+  }
+
+  function normalizeWeek(value) {
+    const raw = safeText(value).trim();
+    if (!raw) return '一';
+    const map = {
+      '1':'一','2':'二','3':'三','4':'四','5':'五','6':'六','7':'日','0':'日',
+      '周一':'一','星期一':'一','Monday':'一','Mon':'一',
+      '周二':'二','星期二':'二','Tuesday':'二','Tue':'二',
+      '周三':'三','星期三':'三','Wednesday':'三','Wed':'三',
+      '周四':'四','星期四':'四','Thursday':'四','Thu':'四',
+      '周五':'五','星期五':'五','Friday':'五','Fri':'五',
+      '周六':'六','星期六':'六','Saturday':'六','Sat':'六',
+      '周日':'日','星期日':'日','星期天':'日','Sunday':'日','Sun':'日'
+    };
+    return map[raw] || raw.replace(/^星期|^周/,'') || '一';
+  }
+
+  function normalizeDateForInput(value) {
+    const raw = safeText(value).trim();
+    if (!raw) return '';
+    const m = raw.match(/(\d{4})[.\/-](\d{1,2})[.\/-](\d{1,2})/);
+    if (m) return `${m[1]}.${String(m[2]).padStart(2,'0')}.${String(m[3]).padStart(2,'0')}`;
+    return raw;
+  }
+
+  function formatToday() {
+    const d = new Date();
+    return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function extractItem(source, type) {
+    const aliases = TYPE_ALIASES[type];
+    let value;
+
+    if (source && typeof source === 'object') {
+      const itemSources = [source.items, source.taskItems, source.content, source];
+      for (const container of itemSources) {
+        if (!container || typeof container !== 'object' || Array.isArray(container)) continue;
+        value = firstObjectValue(container, aliases);
+        if (value !== undefined) break;
+      }
+
+      if (value === undefined) {
+        for (const alias of aliases) {
+          const textKeyCandidates = [
+            `${alias}Content`, `${alias}_content`, `${alias}Text`, `${alias}_text`, `${alias}Task`, `${alias}_task`
+          ];
+          const checkedKeyCandidates = [
+            `${alias}Checked`, `${alias}_checked`, `${alias}Enabled`, `${alias}_enabled`, `${alias}Show`, `${alias}_show`
+          ];
+          const textVal = firstObjectValue(source, textKeyCandidates);
+          const checkedVal = firstObjectValue(source, checkedKeyCandidates);
+          if (textVal !== undefined || checkedVal !== undefined) {
+            return {
+              checked: checkedVal !== undefined ? !!checkedVal : !!safeText(textVal).trim(),
+              content: safeText(textVal)
+            };
+          }
+        }
+      }
+    }
+
+    if (typeof value === 'string' || typeof value === 'number') {
+      const text = safeText(value);
+      return { checked: !!text.trim(), content: text };
+    }
+
+    if (typeof value === 'boolean') {
+      return { checked: value, content: '' };
+    }
+
+    if (value && typeof value === 'object') {
+      const text = firstValue(value.content, value.text, value.value, value.detail, value.task, value.description, '');
+      const checkedRaw = firstValue(value.checked, value.enabled, value.active, value.show, value.selected, undefined);
+      return {
+        checked: checkedRaw === '' || checkedRaw === undefined ? !!safeText(text).trim() : !!checkedRaw,
+        content: safeText(text)
+      };
+    }
+
+    return { checked:false, content:'' };
+  }
+
+  function unwrapData(input) {
+    let obj = input;
+    if (typeof obj === 'string') {
+      const cleaned = obj.replace(/^\uFEFF/,'').trim();
+      obj = JSON.parse(cleaned);
+    }
+    for (let i=0;i<5;i++) {
+      if (!obj || typeof obj !== 'object' || Array.isArray(obj)) break;
+      const wrapped = ['data','state','backup','payload'].find(k => obj[k] && typeof obj[k] === 'object' && !Array.isArray(obj[k]));
+      if (!wrapped) break;
+      const currentHasOwnData = ['class','className','unit','date','tasks','days','taskList'].some(k => obj[k] !== undefined);
+      if (currentHasOwnData) break;
+      obj = obj[wrapped];
+    }
+    return obj;
+  }
+
+  function normalizeImportedData(raw) {
+    const root = unwrapData(raw) || {};
+    const basic = (root.basic && typeof root.basic === 'object') ? root.basic : {};
+
+    let taskSource = firstValue(root.tasks, root.days, root.taskList, root.dayList, root.stages, root.progress, []);
+    if (!Array.isArray(taskSource) && taskSource && typeof taskSource === 'object') {
+      taskSource = Object.values(taskSource);
+    }
+    if (!Array.isArray(taskSource)) taskSource = [];
+
+    const tasks = taskSource.map((task, index) => {
+      const t = (task && typeof task === 'object') ? task : {};
+      const normalized = {
+        day: safeText(firstValue(t.day, t.dayNum, t.dayNumber, t.no, t.index, index + 1)) || String(index + 1),
+        week: normalizeWeek(firstValue(t.week, t.weekday, t.dayOfWeek, t.weekDay, '一')),
+        items: {}
+      };
+      Object.keys(TASK_CONFIG).forEach(type => normalized.items[type] = extractItem(t, type));
+      return normalized;
+    });
+
+    return {
+      version: 3,
+      format: 'task-progress-guide',
+      class: safeText(firstValue(root.class, root.className, root.grade, root.group, basic.class, basic.className)),
+      unit: safeText(firstValue(root.unit, root.unitName, root.topic, root.lesson, basic.unit, basic.topic)),
+      date: normalizeDateForInput(firstValue(root.date, root.classDate, root.dayDate, root.createdDate, basic.date)),
+      tip: safeText(firstValue(root.tip, root.notice, root.reminder, root.footerTip, root.message, basic.tip)),
+      tasks
+    };
+  }
+
+  function getCurrentData() {
+    const tasks = [...els.taskContainer.querySelectorAll('.task-card')].map(card => {
+      const items = {};
+      Object.keys(TASK_CONFIG).forEach(type => {
+        items[type] = {
+          checked: card.querySelector(`.cb-${type}`).checked,
+          content: card.querySelector(`.ta-${type}`).value
+        };
+      });
+      return {
+        day: card.querySelector('.day-input').value.trim(),
+        week: card.querySelector('.week-select').value,
+        items
+      };
+    });
+
+    return {
+      version: 3,
+      format: 'task-progress-guide',
+      savedAt: new Date().toISOString(),
+      class: els.classInput.value,
+      unit: els.unitInput.value,
+      date: els.dateInput.value,
+      tip: els.tipInput.value,
+      tasks
+    };
+  }
+
+  function scheduleSave() {
+    if (restoring) return;
+    syncPreview();
+    clearTimeout(saveTimer);
+    if (els.saveState) els.saveState.querySelector('span:last-child').textContent = '正在保存…';
+    saveTimer = setTimeout(() => {
+      try {
+        localStorage.setItem(CURRENT_KEY, JSON.stringify(getCurrentData()));
+        if (els.saveState) els.saveState.querySelector('span:last-child').textContent = '已自动保存';
+      } catch (e) {
+        console.error(e);
+        if (els.saveState) els.saveState.querySelector('span:last-child').textContent = '自动保存失败';
+      }
+    }, 450);
+  }
+
+  function makeWeekSelect(value='一') {
+    const select = document.createElement('select');
+    select.className = 'week-select';
+    ['一','二','三','四','五','六','日'].forEach(w => {
+      const opt = document.createElement('option');
+      opt.value = w;
+      opt.textContent = `星期${w}`;
+      select.appendChild(opt);
+    });
+    select.value = normalizeWeek(value);
+    if (![...select.options].some(o => o.value === select.value)) select.value = '一';
+    return select;
+  }
+
+  function createTaskCard(data=null, {collapsed=false}={}) {
+    const idx = els.taskContainer.children.length + 1;
+    const task = data || { day:String(idx), week:'一', items:{} };
+
+    const card = document.createElement('div');
+    card.className = 'task-card' + (collapsed ? ' collapsed' : '');
+
+    const head = document.createElement('div');
+    head.className = 'stage-head';
+
+    const left = document.createElement('div');
+    left.className = 'stage-left';
+
+    const dayPill = document.createElement('span');
+    dayPill.className = 'day-pill';
+    dayPill.textContent = 'DAY';
+
+    const control = document.createElement('div');
+    control.className = 'stage-control';
+    control.append('Day ');
+
+    const dayInput = document.createElement('input');
+    dayInput.className = 'day-input';
+    dayInput.value = safeText(task.day || idx);
+    dayInput.inputMode = 'numeric';
+    control.append(dayInput, ' / ');
+
+    const weekSelect = makeWeekSelect(task.week || '一');
+    control.appendChild(weekSelect);
+
+    left.append(dayPill, control);
+
+    const actions = document.createElement('div');
+    actions.className = 'stage-actions';
+
+    const collapseBtn = document.createElement('button');
+    collapseBtn.type = 'button';
+    collapseBtn.className = 'icon-btn collapse';
+    collapseBtn.title = '收起 / 展开';
+    collapseBtn.innerHTML = '<span>⌄</span>';
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.className = 'icon-btn delete';
+    deleteBtn.title = '删除本阶段';
+    deleteBtn.textContent = '×';
+
+    actions.append(collapseBtn, deleteBtn);
+    head.append(left, actions);
+
+    const body = document.createElement('div');
+    body.className = 'task-body';
+
+    Object.entries(TASK_CONFIG).forEach(([type, cfg]) => {
+      const rowData = task.items && task.items[type] ? task.items[type] : {checked:false,content:''};
+      const module = document.createElement('div');
+      module.className = 'task-module' + (rowData.checked ? ' active' : '');
+
+      const top = document.createElement('div');
+      top.className = 'module-top';
+
+      const sw = document.createElement('label');
+      sw.className = 'switch';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.className = `cb-${type}`;
+      cb.checked = !!rowData.checked;
+      const slider = document.createElement('span');
+      slider.className = 'slider';
+      sw.append(cb, slider);
+
+      const name = document.createElement('div');
+      name.className = 'module-name';
+      name.innerHTML = `${cfg.label} <span class="module-code">${cfg.code}</span>`;
+
+      top.append(sw, name);
+
+      const ta = document.createElement('textarea');
+      ta.className = `task-text ta-${type}`;
+      ta.placeholder = '输入任务详情……';
+      ta.value = safeText(rowData.content);
+
+      cb.addEventListener('change', () => {
+        module.classList.toggle('active', cb.checked);
+        scheduleSave();
+      });
+      ta.addEventListener('input', () => {
+        if (ta.value.trim() && !cb.checked) {
+          cb.checked = true;
+          module.classList.add('active');
+        }
+        scheduleSave();
+      });
+
+      module.append(top, ta);
+      body.appendChild(module);
+    });
+
+    dayInput.addEventListener('input', scheduleSave);
+    weekSelect.addEventListener('change', scheduleSave);
+    collapseBtn.addEventListener('click', () => card.classList.toggle('collapsed'));
+    deleteBtn.addEventListener('click', () => {
+      card.remove();
+      if (!els.taskContainer.children.length) createTaskCard();
+      scheduleSave();
+    });
+
+    card.append(head, body);
+    els.taskContainer.appendChild(card);
+    return card;
+  }
+
+  function applyDataToUI(rawData, {fromImport=false}={}) {
+    const data = normalizeImportedData(rawData);
+    restoring = true;
+
+    els.classInput.value = data.class || '';
+    els.unitInput.value = data.unit || '';
+    els.dateInput.value = data.date || '';
+    els.tipInput.value = data.tip || '';
+
+    if (els.dateInput._flatpickr && data.date) {
+      try { els.dateInput._flatpickr.setDate(data.date, false, 'Y.m.d'); } catch(e) {}
+    }
+
+    els.taskContainer.innerHTML = '';
+    if (Array.isArray(data.tasks) && data.tasks.length) {
+      data.tasks.forEach((t,i) => createTaskCard(t,{collapsed:false}));
+    } else {
+      createTaskCard();
+    }
+
+    restoring = false;
+    syncPreview();
+    try { localStorage.setItem(CURRENT_KEY, JSON.stringify(getCurrentData())); } catch(e) {}
+    if (fromImport) showToast('历史备份已导入，并转换为当前格式');
+  }
+
+  function syncPreview() {
+    els.pClass.textContent = els.classInput.value.trim() || '未填班级';
+    els.pUnit.textContent = els.unitInput.value.trim() || '未填单元';
+    els.pDate.textContent = els.dateInput.value.trim() || '未选日期';
+    els.pTip.textContent = els.tipInput.value.trim() || '暂无额外提示。';
+
+    els.pList.innerHTML = '';
+    const cards = [...els.taskContainer.querySelectorAll('.task-card')];
+
+    cards.forEach((card, index) => {
+      const day = card.querySelector('.day-input').value.trim() || String(index+1);
+      const week = card.querySelector('.week-select').value || '一';
+
+      const stage = document.createElement('section');
+      stage.className = 'p-stage';
+
+      const mark = document.createElement('div');
+      mark.className = 'p-stage-mark';
+      mark.innerHTML = `<div class="p-day-num">DAY</div><div class="p-day-circle">${escapeHtml(day)}</div><div class="p-week">星期${escapeHtml(week)}</div>`;
+
+      const content = document.createElement('div');
+      content.className = 'p-stage-content';
+      let count = 0;
+
+      Object.entries(TASK_CONFIG).forEach(([type,cfg]) => {
+        const cb = card.querySelector(`.cb-${type}`);
+        const ta = card.querySelector(`.ta-${type}`);
+        if (!cb.checked) return;
+        count++;
+        const row = document.createElement('div');
+        row.className = 'p-task';
+        const name = document.createElement('div');
+        name.className = 'p-task-name';
+        name.textContent = cfg.label;
+        const text = document.createElement('div');
+        text.className = 'p-task-text';
+        text.textContent = ta.value.trim() || '（见课堂要求）';
+        row.append(name,text);
+        content.appendChild(row);
+      });
+
+      if (!count) {
+        const empty = document.createElement('div');
+        empty.className = 'p-empty';
+        empty.textContent = '本阶段任务待添加';
+        content.appendChild(empty);
+      }
+
+      stage.append(mark,content);
+      els.pList.appendChild(stage);
+    });
+  }
+
+  function escapeHtml(value) {
+    return safeText(value).replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.rel = 'noopener';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
+  function timeStamp() {
+    const d = new Date();
+    return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}${String(d.getSeconds()).padStart(2,'0')}`;
+  }
+
+  function exportJSON() {
+    try {
+      const data = getCurrentData();
+      const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'});
+      downloadBlob(blob,`任务进程备份_${timeStamp()}.json`);
+      showToast('JSON 备份已导出');
+    } catch(e) {
+      console.error(e);
+      showToast('JSON 导出失败，请重试','error');
+    }
+  }
+
+  function stripCodeFence(text) {
+    return text.replace(/^\uFEFF/,'').trim()
+      .replace(/^```(?:json|javascript|txt)?\s*/i,'')
+      .replace(/\s*```$/,'')
+      .trim();
+  }
+
+  function parseBackupText(text) {
+    const cleaned = stripCodeFence(text);
+    try { return JSON.parse(cleaned); } catch(e) {}
+
+    const firstBrace = cleaned.search(/[\[{]/);
+    if (firstBrace >= 0) {
+      const lastCurly = cleaned.lastIndexOf('}');
+      const lastSquare = cleaned.lastIndexOf(']');
+      const end = Math.max(lastCurly,lastSquare);
+      if (end > firstBrace) {
+        return JSON.parse(cleaned.slice(firstBrace,end+1));
+      }
+    }
+    throw new Error('无法识别备份内容');
+  }
+
+  function importFile(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = parseBackupText(String(reader.result || ''));
+        applyDataToUI(parsed,{fromImport:true});
+      } catch(e) {
+        console.error(e);
+        showToast('备份格式无法识别，请检查文件','error');
+      } finally {
+        els.jsonUpload.value = '';
+      }
+    };
+    reader.onerror = () => showToast('文件读取失败，请重新选择','error');
+    reader.readAsText(file,'utf-8');
+  }
+
+  async function ensureHtml2Canvas() {
+    if (typeof window.html2canvas === 'function') return true;
+    const urls = [
+      'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
+      'https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js'
+    ];
+    for (const src of urls) {
+      try {
+        await new Promise((resolve,reject) => {
+          const s = document.createElement('script');
+          s.src = src;
+          s.onload = resolve;
+          s.onerror = reject;
+          document.head.appendChild(s);
+        });
+        if (typeof window.html2canvas === 'function') return true;
+      } catch(e) {}
+    }
+    return false;
+  }
+
+  async function exportImage() {
+    const btn = els.downloadImgBtn;
+    const oldText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '正在生成高清图片…';
+
+    try {
+      syncPreview();
+      const ready = await ensureHtml2Canvas();
+      if (!ready) throw new Error('图片生成组件加载失败，请检查网络后刷新页面');
+
+      if (document.fonts && document.fonts.ready) {
+        try { await document.fonts.ready; } catch(e) {}
+      }
+
+      const stage = document.createElement('div');
+      stage.className = 'export-stage';
+      const clone = document.getElementById('guidePaper').cloneNode(true);
+      clone.removeAttribute('id');
+      stage.appendChild(clone);
+      document.body.appendChild(stage);
+
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+      const height = Math.ceil(clone.scrollHeight);
+      let scale = 2;
+      if (height > 12000) scale = 1.5;
+      if (height > 18000) scale = 1;
+
+      const canvas = await window.html2canvas(clone,{
+        scale,
+        useCORS:true,
+        allowTaint:false,
+        backgroundColor:'#ffffff',
+        logging:false,
+        scrollX:0,
+        scrollY:0,
+        width:760,
+        height,
+        windowWidth:900,
+        windowHeight:Math.max(1000,height)
+      });
+
+      stage.remove();
+
+      const blob = await new Promise((resolve,reject) => {
+        canvas.toBlob(b => b ? resolve(b) : reject(new Error('PNG 转换失败')),'image/png',1);
+      });
+
+      const c = els.classInput.value.trim() || '未命名班级';
+      const d = els.dateInput.value.trim() || '日期未知';
+      const filename = `${c}-课后任务进程指引-${d}.png`.replace(/[\\/:*?"<>|]/g,'-');
+      downloadBlob(blob,filename);
+      showToast('指引图片已生成');
+    } catch(e) {
+      console.error(e);
+      showToast(e.message || '图片生成失败，请刷新后重试','error');
+    } finally {
+      const stale = document.querySelector('.export-stage');
+      if (stale) stale.remove();
+      btn.disabled = false;
+      btn.textContent = oldText;
+    }
+  }
+
+  function loadInitialData() {
+    let raw = null;
+    let sourceKey = '';
+    for (const key of [CURRENT_KEY,...LEGACY_KEYS]) {
+      const value = localStorage.getItem(key);
+      if (value) { raw = value; sourceKey = key; break; }
+    }
+
+    if (raw) {
+      try {
+        applyDataToUI(JSON.parse(raw));
+        if (sourceKey !== CURRENT_KEY) {
+          localStorage.setItem(CURRENT_KEY, JSON.stringify(getCurrentData()));
+          showToast('已恢复旧版缓存，并转换为当前格式');
+        }
+        return;
+      } catch(e) {
+        console.warn('缓存恢复失败',e);
+      }
+    }
+
+    restoring = true;
+    els.dateInput.value = formatToday();
+    createTaskCard({
+      day:'1',week:'一',items:{
+        voice:{checked:false,content:''},
+        write:{checked:false,content:''},
+        listen:{checked:false,content:''},
+        word:{checked:false,content:''},
+        extend:{checked:false,content:''}
+      }
+    });
+    restoring = false;
+    syncPreview();
+    scheduleSave();
+  }
+
+  // 日期选择器
+  if (window.flatpickr) {
+    try {
+      window.flatpickr(els.dateInput,{
+        locale: window.flatpickr.l10ns && window.flatpickr.l10ns.zh ? 'zh' : undefined,
+        dateFormat:'Y.m.d',
+        allowInput:true,
+        onChange: scheduleSave,
+        onClose: scheduleSave
+      });
+    } catch(e) {
+      console.warn('日期选择器初始化失败，将使用普通文本输入框',e);
+    }
+  }
+
+  [els.classInput,els.unitInput,els.dateInput,els.tipInput].forEach(el => {
+    el.addEventListener('input',scheduleSave);
+    el.addEventListener('change',scheduleSave);
+  });
+
+  els.addTaskBtn.addEventListener('click',() => {
+    createTaskCard({day:String(els.taskContainer.children.length+1),week:'一',items:{}},{collapsed:false});
+    scheduleSave();
+    const last = els.taskContainer.lastElementChild;
+    if (last) last.scrollIntoView({behavior:'smooth',block:'nearest'});
+  });
+
+  els.exportJsonBtn.addEventListener('click',exportJSON);
+  els.importJsonBtn.addEventListener('click',() => els.jsonUpload.click());
+  els.jsonUpload.addEventListener('change',e => {
+    const file = e.target.files && e.target.files[0];
+    if (file) importFile(file);
+  });
+  els.downloadImgBtn.addEventListener('click',exportImage);
+
+  loadInitialData();
+})();
 </script>
-
 </body>
 </html>
